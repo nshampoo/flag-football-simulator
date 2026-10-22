@@ -78,6 +78,8 @@ h1 { font-size: 22px; margin: 0; line-height: 1.25; font-weight: 600; }
 .field .qb { fill: var(--qb-ink); }
 .field .ball { fill: #8a4b21; stroke: #fff; stroke-width: 0.08; }
 .field text { font: 0.75px var(--font); fill: #fff; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.field .zone circle { fill: var(--bad); fill-opacity: 0.08; stroke: var(--bad); stroke-width: 0.08; stroke-dasharray: 0.3 0.25; opacity: 0.7; }
+.field .zone text { font-size: 0.7px; fill: var(--bad); opacity: 0.8; }
 .field .dodge circle { fill: none; stroke: var(--good); stroke-width: 0.18; }
 .field .dodge text { font-size: 0.9px; font-weight: 600; fill: var(--good); stroke: var(--surface); stroke-width: 0.2; paint-order: stroke; }
 

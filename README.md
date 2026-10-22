@@ -11,7 +11,7 @@ See [docs/DESIGN.md](docs/DESIGN.md) for the league rules, model, and roadmap.
 cd app
 npm install
 npm test
-npm run sim -- [archetype] [plays]   # Monte Carlo: ranks rushers and rush modes vs an archetype
+npm run sim -- [archetype|all] [plays] [coverage]   # ranks every defense, rusher, and rush mode
 npm run dev                          # play viewer
 ```
 

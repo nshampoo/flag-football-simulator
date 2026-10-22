@@ -1,3 +1,4 @@
+import type { DefenseCall } from '../engine/coverage';
 import type { Dodge, Frame, PlayRecording } from '../engine/sim';
 import { FIELD } from '../engine/types';
 
@@ -14,13 +15,14 @@ interface Props {
   /** Exact playback time; frames are 0.1 s apart. */
   time: number;
   dodges: Dodge[];
+  call: DefenseCall;
   defenseIds: Set<string>;
   rusherId: string;
   qbId: string;
   names: Map<string, string>;
 }
 
-export function Field({ rec, frame, time, dodges, defenseIds, rusherId, qbId, names }: Props) {
+export function Field({ rec, frame, time, dodges, call, defenseIds, rusherId, qbId, names }: Props) {
   const yards = [];
   for (let y = -5; y <= TOP; y += 5) yards.push(y);
   const kind = (id: string) => (id === rusherId ? 'rusher' : defenseIds.has(id) ? 'def' : id === qbId ? 'qb' : 'off');
@@ -32,6 +34,14 @@ export function Field({ rec, frame, time, dodges, defenseIds, rusherId, qbId, na
         <line key={y} className={y === 0 ? 'los' : 'yard'} x1={-W} x2={W} y1={-y} y2={-y} />
       ))}
       {FIELD.goalLine <= TOP && <line className="goal" x1={-W} x2={W} y1={-FIELD.goalLine} y2={-FIELD.goalLine} />}
+      {Object.entries(call.jobs).map(([id, job]) =>
+        job.kind === 'zone' ? (
+          <g key={id} className="zone" transform={`translate(${job.zone.landmark.x} ${-job.zone.landmark.y})`}>
+            <circle r={1.6} />
+            <text y={2.3}>{job.zone.label}</text>
+          </g>
+        ) : null,
+      )}
       {Object.entries(rec.paths).map(([id, pts]) => (
         <polyline
           key={id}

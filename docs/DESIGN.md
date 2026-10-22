@@ -98,9 +98,23 @@ Defense = coverage + rusher behavior + personnel.
    breaks on the throw, but still owns the deep middle by default. A free-robber variant (no deep
    middle responsibility) is a flag flip, testable as a 6th call.
 
-**Zone mechanics**: each zone has a landmark, radius, start depth, end depth, drop speed
-(Speed/Agility), and trigger rules (drive on early breaks, carry verticals past a set depth). Lurker
-role reads the QB's current target.
+**Zone mechanics** (`engine/coverage.ts`, `zoneStep` in `engine/sim.ts`): each zone has a landmark,
+pre-snap alignment, radius, and carry depth. Zone defenders read receivers with a lag (Zone rating),
+lean toward the QB's eyes, break on the throw sooner than man defenders, and ignore rubs. Four kinds:
+- **deep**: stay on top of the deepest threat in their band and split multiple threats; never more
+  than 8 yds past the landmark (chasing a go to 35 yds leaves a hole at 15).
+- **under**: undercut the receiver nearest the landmark; past the carry depth, pass him off.
+- **squat** (Cover 3 Aggressive corners): read the release. A vertical stem off the line means bail
+  now (from 5 yds deep there's no catching up later); quick outside breaks get jumped. A double move
+  that breaks outside first (out and up) beats it, by design.
+- **lurk**: drift toward whoever the QB is looking at; carry anything in the deep middle unless free
+  (robber).
+
+Personnel is a fit heuristic for now: deep spots to fast, tall zone players, the lurker to the best
+zone player with hands, squats to speed and agility, and underneath zones to whoever's left.
+
+Receivers who finish a route improvise to open space, but within 4 yds of where the route ended
+(untethered, they drifted 10+ yds upfield into zone holes).
 
 **Man mechanics**: defenders steer toward where their receiver was a lag ago (lag from Man rating).
 Receivers make planned cuts (losing speed by Agility); defenders react, so separation appears at breaks.
@@ -147,8 +161,9 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - [x] Monte Carlo summary (`engine/montecarlo.ts`)
 - [x] Monte Carlo CLI (`npm run sim`): ranks rusher × rush mode in man coverage
 - [x] Basic play viewer (animated field, scrubber, run 1,000)
-- [ ] Zones: landmarks, triggers, Cover 2, Cover 3, Cover 3 Aggressive, lurker
-- [ ] Man + bracket
+- [x] Zones: landmarks, triggers, Cover 2, Cover 3, Cover 3 Aggressive, lurker, Robber
+- [x] Man + bracket
+- [x] CLI ranks every defense × rusher × rush mode per archetype; viewer has a defense picker
 - [ ] Personnel search across schemes
 - [ ] JSON results, heatmap, and call cards
 - [ ] Story page and app on shampoe.com (personal-website repo)
@@ -175,6 +190,20 @@ Current (1,000 plays per archetype, man coverage, fastest player rushing hard):
 - Scrambles now gain 1.6 to 3.7 yds, but still happen too often for mobile QBs (45% of plays for Scrambler).
 - Sacks vs a Scared QB: 7.5% (agility 2) / 5.8% (6) / 4.2% (10).
 - Backfield releases (flat, wheel) are ~6 yds open against man: plausible, worth checking on film.
+
+First defense rankings (400 plays per call; margins under ~0.5 yds/play are within noise):
+
+| Archetype | Best | Runner-up | Note |
+|---|---|---|---|
+| Gunslinger | Cover 3 (5.5) | Man (5.8) | C3 Aggressive / Robber get torched deep (37 to 41% big plays) |
+| Dink and Dunk | Man (4.3) | Cover 2 (4.7) | Spec guessed C3 Aggressive; sim has it 4th (5.6) |
+| Hero Ball | Man (4.3) | Cover 3 (5.1) | Spec guessed bracket; it's 4th (8.2) because the QB checks down to the uncovered center (59% of targets) |
+| Scrambler | Cover 3 (3.4) | Cover 2 (3.7) | Rusher: Quick (fast and agile) |
+| Scared QB | Man (3.8) | Cover 3 (5.2) | Rush hard, as the spec guessed |
+| Balanced | Man (4.1) | Cover 3 (5.0) | |
+
+Hard rush beats contain almost everywhere. Against C3 Aggressive, Robber, and the bracket, QBs throw at
+2 to 3 s with no sacks: something is open early (holes under the squats, the uncovered center).
 
 Next: watch plays in the viewer and compare against real games before more tuning.
 

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ARCHETYPE_LABELS, ARCHETYPE_NAMES, ARCHETYPES, type ArchetypeName } from './engine/archetypes';
 import { runMatchup, type Summary } from './engine/montecarlo';
+import { COVERAGE_LABELS, COVERAGES, defenseCall, type Coverage, type RushMode } from './engine/coverage';
 import { MY_TEAM, OPPONENT } from './engine/roster';
-import { manCall, simulatePlay, type PlayResult, type RushMode } from './engine/sim';
+import { simulatePlay, type PlayResult } from './engine/sim';
 import { DT } from './engine/types';
 import { Field } from './ui/Field';
 
@@ -24,6 +25,7 @@ function describe(r: PlayResult): string {
 
 export default function App() {
   const [archetype, setArchetype] = useState<ArchetypeName>('balanced');
+  const [coverage, setCoverage] = useState<Coverage>('cover3');
   const [rusherId, setRusherId] = useState(MY_TEAM[0].id);
   const [rushMode, setRushMode] = useState<RushMode>('hard');
   const [seed, setSeed] = useState(1);
@@ -33,8 +35,8 @@ export default function App() {
   const [summary, setSummary] = useState<Summary>();
 
   const input = useMemo(
-    () => ({ offense: OPPONENT, tendencies: ARCHETYPES[archetype], defense: MY_TEAM, call: manCall(MY_TEAM, OPPONENT, rusherId, rushMode) }),
-    [archetype, rusherId, rushMode],
+    () => ({ offense: OPPONENT, tendencies: ARCHETYPES[archetype], defense: MY_TEAM, call: defenseCall(coverage, MY_TEAM, OPPONENT, rusherId, rushMode) }),
+    [archetype, coverage, rusherId, rushMode],
   );
   const rec = useMemo(() => simulatePlay({ ...input, seed, record: true }), [input, seed]);
   const end = rec.frames[rec.frames.length - 1].t;
@@ -73,17 +75,17 @@ export default function App() {
     <div className="app">
       <header>
         <h1>Flag Football Defense Simulator</h1>
-        <p>7v7, one rusher on a 5 second count. Man coverage for now; zones are next.</p>
+        <p>7v7, one rusher on a 5 second count. Pick an opponent and a defense and watch it play out.</p>
       </header>
       <div className="layout">
         <div className="card">
-          <Field rec={rec} frame={frame} time={time} dodges={rec.dodges} defenseIds={defenseIds} rusherId={rusherId} qbId={OPPONENT.qb.id} names={names} />
+          <Field rec={rec} frame={frame} time={time} dodges={rec.dodges} call={input.call} defenseIds={defenseIds} rusherId={rusherId} qbId={OPPONENT.qb.id} names={names} />
           <div className="legend">
             <span style={{ '--c': 'var(--wr-ink)' } as React.CSSProperties}>Offense</span>
             <span style={{ '--c': 'var(--qb-ink)' } as React.CSSProperties}>QB</span>
             <span style={{ '--c': 'var(--bad)' } as React.CSSProperties}>Coverage</span>
             <span style={{ '--c': 'var(--te-ink)' } as React.CSSProperties}>Rusher</span>
-            <span>Bold route: QB's primary</span>
+            <span>Bold route: QB's primary · dashed circles: zone landmarks</span>
           </div>
           <div className="scrub">
             <button onClick={() => (time >= end ? (setTime(0), setPlaying(true)) : setPlaying(!playing))}>
@@ -108,6 +110,12 @@ export default function App() {
             Opponent
             <select value={archetype} onChange={(e) => setArchetype(e.target.value as ArchetypeName)}>
               {ARCHETYPE_NAMES.map((a) => <option key={a} value={a}>{ARCHETYPE_LABELS[a]}</option>)}
+            </select>
+          </label>
+          <label>
+            Defense
+            <select value={coverage} onChange={(e) => setCoverage(e.target.value as Coverage)}>
+              {COVERAGES.map((c) => <option key={c} value={c}>{COVERAGE_LABELS[c]}</option>)}
             </select>
           </label>
           <label>
