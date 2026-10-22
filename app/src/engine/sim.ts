@@ -67,6 +67,8 @@ interface Body {
   phys: Physical;
   pos: Vec;
   vel: Vec;
+  /** After missing a flag pull, no new attempt until this time. */
+  nextPull: number;
 }
 
 interface Runner extends Body {
@@ -93,8 +95,20 @@ const YAC_TIME = 8;
 
 const body = (player: Player, pos: Vec, rng: Rng): Body => {
   const p = jitter(player, rng);
-  return { id: p.id, player: p, phys: physical(p.ratings), pos, vel: { x: 0, y: 0 } };
+  return { id: p.id, player: p, phys: physical(p.ratings), pos, vel: { x: 0, y: 0 }, nextPull: 0 };
 };
+
+/**
+ * One flag pull attempt by a defender within reach. Elusive carriers make it miss, and a defender
+ * who misses stumbles: momentum gone, and a beat before they can try again.
+ */
+function pullsFlag(d: Body, carrier: Body, t: number, rng: Rng): boolean {
+  if (t < d.nextPull) return false;
+  if (rng() < d.phys.flagPull * (1 - carrier.phys.elusiveness)) return true;
+  d.vel = mul(d.vel, 0.3);
+  d.nextPull = t + 0.3 + d.phys.reaction;
+  return false;
+}
 
 /** Move toward `target`, limited by acceleration forward and by agility sideways. */
 function steer(b: Body, target: Vec, maxSpeed = b.phys.topSpeed) {
@@ -268,10 +282,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
       if (yards >= FIELD.goalLine) return done({ outcome, yards: FIELD.goalLine, touchdown: true, ...extra });
       if (Math.abs(carrier.pos.x) > FIELD.halfWidth) return done({ outcome, yards, touchdown: false, ...extra });
       for (const d of defenders) {
-        if (dist(d.pos, carrier.pos) >= 1) continue;
-        // An agile carrier makes people miss; a defender who whiffs at speed loses a step.
-        if (rng() < d.phys.flagPull * (1 - carrier.player.ratings.agility / 20)) return done({ outcome, yards, touchdown: false, ...extra });
-        if (len(d.vel) > 4) d.vel = mul(d.vel, 0.3);
+        if (dist(d.pos, carrier.pos) < 1 && pullsFlag(d, carrier, t, rng)) return done({ outcome, yards, touchdown: false, ...extra });
       }
     }
     return done({ outcome, yards: carrier.pos.y, touchdown: false, ...extra });
@@ -343,7 +354,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
     const pressure = clamp((4 - gap) / 3, 0, 1);
     if (pressure > 0.5) pressured = true;
 
-    if (gap < 1 && rng() < rusher.phys.flagPull) {
+    if (gap < 1 && pullsFlag(rusher, qb, t, rng)) {
       snapshot(t, qb.pos);
       return done({ outcome: 'sack', yards: qb.pos.y, touchdown: false });
     }

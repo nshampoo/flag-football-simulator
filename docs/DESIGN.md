@@ -39,7 +39,7 @@ Every player has six 1 to 10 ratings, mapped to physical values in `engine/ratin
 | Rating | Drives |
 |---|---|
 | Speed | top speed (6.5 to 8.5 yd/s) and acceleration |
-| Agility | change of direction (speed kept through a cut, scaled by cut angle), reaction time (0.2 to 0.5 s), route sharpness, flag pulling |
+| Agility | change of direction (speed kept through a cut, scaled by cut angle), reaction time (0.2 to 0.5 s), route sharpness, flag pulling, and (with some Speed) **elusiveness**: the chance a flag pull on you misses (5 to 50%) |
 | Hands | catch probability, contested catches |
 | Catch Height | height × jump; max catch point (~8 ft at 1 to ~10.5 ft at 10). Used on contested/high balls, both receivers and defenders |
 | Man | mirroring tightness in man coverage |
@@ -49,6 +49,11 @@ QBs add **Arm** (accuracy and range) and **Poise** (release time, read speed, ac
 and how long they lock on to their favorite). Scramble ability comes from Speed.
 
 Small per-play noise on every rating so repeated reps vary. No fatigue in v1.
+
+**Flag pulls** (sacks, scrambles, and runs after the catch all use the same rule): a defender within a
+yard tries each tick with chance flag pull × (1 − carrier's elusiveness). A miss costs the defender
+their momentum and a beat (0.3 s + reaction time) before they can try again, so an athletic QB can make
+the rusher whiff and buy time even when the rusher is right in his way.
 
 ## 5. Routes and plays
 
@@ -166,8 +171,9 @@ Current (1,000 plays per archetype, man coverage, fastest player rushing hard):
 - Completion ~56 to 62%: OK.
 - Throw timing: quick throws 5 to 27% of plays, 4 to 8 s band 24 to 65%, but still 25 to 53% in the
   1.2 to 4 s gap. Too many.
-- Yards per play 0.7 to 3.6: too low. Big plays (15+) only 3 to 8%.
-- Scrambles lose ~3 yds on average and happen too often for mobile QBs (44% of plays for Scrambler).
+- Yards per play 3.7 to 5.9 and big plays (15+) 8 to 14% since elusiveness: closer, still a bit low.
+- Scrambles now gain 1.6 to 3.7 yds, but still happen too often for mobile QBs (45% of plays for Scrambler).
+- Sacks vs a Scared QB: 7.5% (agility 2) / 5.8% (6) / 4.2% (10).
 - Backfield releases (flat, wheel) are ~6 yds open against man: plausible, worth checking on film.
 
 Next: watch plays in the viewer and compare against real games before more tuning.

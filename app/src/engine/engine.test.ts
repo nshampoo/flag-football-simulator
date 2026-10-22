@@ -81,6 +81,16 @@ describe('sim', () => {
     expect(s.yardsPerPlay).toBeLessThan(20);
   });
 
+  it('an elusive QB dodges more sacks than a slow one', () => {
+    const withQb = (agility: number, speed: number) => ({
+      ...OPPONENT,
+      qb: { ...OPPONENT.qb, ratings: { ...OPPONENT.qb.ratings, agility, speed } },
+    });
+    const slow = runMatchup({ ...base, offense: withQb(2, 3), tendencies: ARCHETYPES.scaredQb }, 600);
+    const elusive = runMatchup({ ...base, offense: withQb(10, 9), tendencies: ARCHETYPES.scaredQb }, 600);
+    expect(elusive.sackPct).toBeLessThan(slow.sackPct * 0.8);
+  });
+
   it('a scared QB gets sacked more than a dink and dunk QB', () => {
     const scared = runMatchup({ ...base, tendencies: ARCHETYPES.scaredQb }, 400);
     const quick = runMatchup({ ...base, tendencies: ARCHETYPES.dinkAndDunk }, 400);

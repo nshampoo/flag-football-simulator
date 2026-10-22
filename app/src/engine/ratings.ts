@@ -19,6 +19,8 @@ export interface Physical {
   reaction: number;
   /** Chance per tick of pulling a flag when within reach. */
   flagPull: number;
+  /** Chance a flag pull attempt on this player misses (they dodge it). Mostly Agility, some Speed. */
+  elusiveness: number;
   /** Uncontested catch probability for a ball on target. */
   catchProb: number;
   /** Highest point the player can catch the ball, feet. */
@@ -37,6 +39,7 @@ export function physical(r: Ratings): Physical {
     cutLoss: scale(r.agility, 0.85, 0.45),
     reaction: scale(r.agility, 0.5, 0.2),
     flagPull: scale(r.agility, 0.3, 0.6),
+    elusiveness: scale(0.75 * r.agility + 0.25 * r.speed, 0.05, 0.5),
     catchProb: scale(r.hands, 0.6, 0.95),
     catchHeightFt: scale(r.catchHeight, 8, 10.5),
     manLag: scale(r.man, 0.6, 0.15),
