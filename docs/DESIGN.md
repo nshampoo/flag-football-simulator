@@ -194,8 +194,13 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - [x] Best setup view: pick an opponent, run the search in a web worker (~9 s), get a call card (best
   defense, rusher, lineup, runner-up and margin, stats, watch-for, every defense ranked) and "Watch it"
   in the play viewer
+- [x] Roster tab: build the team from preset player types (Burner, Glue, Tall, Ballhawk, Steady,
+  Quick, Vet), repeats allowed, named; saved in the browser. Real ratings aren't needed.
+- [x] Lineup diagram on the call card: everyone's pre-snap spot vs a trips formation, with zone spots,
+  drops, man assignments, and roles
+- [x] Live at shampoe.com/flag/ (story page) and /flag/open/ (app), via the `FlagFootballSimSite` stack
 - [ ] Heatmap (defense × archetype) on the page
-- [ ] Story page and app on shampoe.com (personal-website repo)
+- [x] Story page and app on shampoe.com (personal-website repo)
 
 **v2 and later**
 - Drive simulation layer: stop rate and points allowed per drive, situational call sheets (3rd and
@@ -256,6 +261,6 @@ Next: watch plays in the viewer and compare against real games before more tunin
 
 ## 12. Open questions
 
-- Real roster ratings
+- Real roster ratings (optional now: rosters are built from preset types)
 - League down rules and any no-run zones (needed for v2 drives)
 - Exact field length and end zone depth

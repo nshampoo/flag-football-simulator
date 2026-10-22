@@ -2,15 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ARCHETYPE_DESCRIPTIONS, ARCHETYPE_LABELS, ARCHETYPE_NAMES, ARCHETYPES, type ArchetypeName } from '../engine/archetypes';
 import { COVERAGE_DESCRIPTIONS, COVERAGE_LABELS, COVERAGES, defenseCall, RUSH_DESCRIPTIONS, type Coverage, type RushMode } from '../engine/coverage';
 import { runMatchup, type Summary } from '../engine/montecarlo';
-import { MY_TEAM, OPPONENT } from '../engine/roster';
+import { OPPONENT } from '../engine/roster';
 import { simulatePlay, type PlayResult } from '../engine/sim';
-import { DT } from '../engine/types';
+import { DT, type Player } from '../engine/types';
 import { Field } from './Field';
-import { defenseIds, names, pct, ratingsLine, RUSH_LABELS, type Picks } from './labels';
+import { nameMap, pct, ratingsLine, RUSH_LABELS, type Picks } from './labels';
 
 const SPEEDS = [0.25, 0.5, 1];
 
-function describe(r: PlayResult): string {
+function describe(r: PlayResult, names: Map<string, string>): string {
   const who = r.targetId ? names.get(r.targetId) : undefined;
   const yds = `${r.yards >= 0 ? '+' : ''}${r.yards.toFixed(1)} yds`;
   switch (r.outcome) {
@@ -23,12 +23,16 @@ function describe(r: PlayResult): string {
 }
 
 interface Props {
+  roster: Player[];
   picks: Picks;
   setPicks: (update: (p: Picks) => Picks) => void;
 }
 
-export function Viewer({ picks, setPicks }: Props) {
+export function Viewer({ roster, picks, setPicks }: Props) {
   const { archetype, coverage, rusherId, rushMode } = picks;
+  const names = useMemo(() => nameMap(roster), [roster]);
+  const defenseIds = useMemo(() => new Set(roster.map((p) => p.id)), [roster]);
+  const rusher = roster.find((p) => p.id === rusherId) ?? roster[0];
   const [seed, setSeed] = useState(1);
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(true);
@@ -39,10 +43,10 @@ export function Viewer({ picks, setPicks }: Props) {
     () => ({
       offense: OPPONENT,
       tendencies: ARCHETYPES[archetype],
-      defense: MY_TEAM,
-      call: picks.call ?? defenseCall(coverage, MY_TEAM, OPPONENT, rusherId, rushMode),
+      defense: roster,
+      call: picks.call ?? defenseCall(coverage, roster, OPPONENT, rusherId, rushMode),
     }),
-    [archetype, coverage, rusherId, rushMode, picks.call],
+    [archetype, coverage, rusherId, rushMode, picks.call, roster],
   );
   const rec = useMemo(() => simulatePlay({ ...input, seed, record: true }), [input, seed]);
   const end = rec.frames[rec.frames.length - 1].t;
@@ -99,7 +103,7 @@ export function Viewer({ picks, setPicks }: Props) {
           <span>{time.toFixed(1)}s</span>
         </div>
         <div className="result">
-          <b>{describe(r)}</b>
+          <b>{describe(r, names)}</b>
           <div className="muted">
             {rec.play.formation} formation · {r.throwTime !== undefined ? `thrown at ${r.throwTime.toFixed(1)}s` : 'no throw'}
             {r.separation !== undefined && ` · ${r.separation.toFixed(1)} yds of separation`}
@@ -133,12 +137,12 @@ export function Viewer({ picks, setPicks }: Props) {
         <label>
           Rusher
           <select value={rusherId} onChange={(e) => pick({ rusherId: e.target.value })}>
-            {MY_TEAM.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {roster.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.type})</option>)}
           </select>
           <span className="hint">
-            {MY_TEAM.find((p) => p.id === rusherId)!.note}
+            {rusher.type}: {rusher.note}
             <br />
-            {ratingsLine(rusherId)}
+            {ratingsLine(rusher)}
           </span>
         </label>
         <label>

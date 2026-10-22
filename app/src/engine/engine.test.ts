@@ -11,7 +11,8 @@ import { searchBestSetup } from './search';
 import { simulatePlay } from './sim';
 import { FIELD, RUSH_COUNT } from './types';
 
-const call = defenseCall('man', MY_TEAM, OPPONENT, 'burner', 'hard');
+const RUSHER = MY_TEAM[0].id;
+const call = defenseCall('man', MY_TEAM, OPPONENT, RUSHER, 'hard');
 const base = { offense: OPPONENT, tendencies: ARCHETYPES.balanced, defense: MY_TEAM, call };
 
 describe('ratings', () => {
@@ -104,13 +105,13 @@ describe('sim', () => {
 describe('coverages', () => {
   it('gives every non-rusher a job', () => {
     for (const coverage of COVERAGES) {
-      const c = defenseCall(coverage, MY_TEAM, OPPONENT, 'burner', 'hard');
-      expect(Object.keys(c.jobs).sort()).toEqual(MY_TEAM.filter((p) => p.id !== 'burner').map((p) => p.id).sort());
+      const c = defenseCall(coverage, MY_TEAM, OPPONENT, RUSHER, 'hard');
+      expect(Object.keys(c.jobs).sort()).toEqual(MY_TEAM.filter((p) => p.id !== RUSHER).map((p) => p.id).sort());
     }
   });
 
   it('bracket puts two on the favorite and leaves one eligible uncovered', () => {
-    const c = defenseCall('manBracket', MY_TEAM, OPPONENT, 'burner', 'hard');
+    const c = defenseCall('manBracket', MY_TEAM, OPPONENT, RUSHER, 'hard');
     const targets = Object.values(c.jobs).map((j) => (j.kind === 'man' ? j.targetId : ''));
     expect(targets.filter((id) => id === OPPONENT.favoriteId)).toHaveLength(2);
     expect(new Set(targets).size).toBe(5);
@@ -118,7 +119,7 @@ describe('coverages', () => {
 
   it('every coverage produces plausible numbers', () => {
     for (const coverage of COVERAGES) {
-      const s = runMatchup({ ...base, call: defenseCall(coverage, MY_TEAM, OPPONENT, 'burner', 'hard') }, 300);
+      const s = runMatchup({ ...base, call: defenseCall(coverage, MY_TEAM, OPPONENT, RUSHER, 'hard') }, 300);
       expect(s.completionPct, coverage).toBeGreaterThan(0.3);
       expect(s.completionPct, coverage).toBeLessThan(0.92);
       expect(s.yardsPerPlay, coverage).toBeGreaterThan(1);
@@ -129,7 +130,7 @@ describe('coverages', () => {
   it('safeties keep go routes in front of them', () => {
     // Big completions on go routes, per 1,000 plays against a gunslinger.
     const goBombs = (coverage: (typeof COVERAGES)[number]) => {
-      const call = defenseCall(coverage, MY_TEAM, OPPONENT, 'burner', 'hard');
+      const call = defenseCall(coverage, MY_TEAM, OPPONENT, RUSHER, 'hard');
       let n = 0;
       for (let seed = 1; seed <= 1000; seed++) {
         const rec = simulatePlay({ ...base, tendencies: ARCHETYPES.gunslinger, call, seed });
@@ -144,7 +145,7 @@ describe('coverages', () => {
 
   it('the bracket takes targets away from their favorite', () => {
     const share = (coverage: (typeof COVERAGES)[number]) => {
-      const call = defenseCall(coverage, MY_TEAM, OPPONENT, 'burner', 'hard');
+      const call = defenseCall(coverage, MY_TEAM, OPPONENT, RUSHER, 'hard');
       let n = 0;
       for (let seed = 1; seed <= 600; seed++) {
         if (simulatePlay({ ...base, tendencies: ARCHETYPES.heroBall, call, seed }).result.targetId === OPPONENT.favoriteId) n++;

@@ -153,3 +153,23 @@ table.rank th { text-align: left; font-weight: 600; color: var(--muted); font-si
 table.rank td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--rule-soft); white-space: nowrap; }
 table.rank .num { text-align: right; font-family: var(--mono); }
 table.rank tr.current td { background: var(--wr-tag); }
+
+.roster { display: grid; gap: 12px; }
+.roster h2 { font-size: 18px; }
+.roster p.muted { margin: 0; }
+.roster input, .roster select { padding: 5px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface-2); width: 100%; min-width: 110px; }
+.roster td { vertical-align: top; }
+.roster .hint { white-space: normal; margin-top: 3px; max-width: 220px; }
+.roster > button { justify-self: start; }
+
+.diagram-card { display: grid; gap: 8px; justify-items: center; }
+.diagram-card h3 { justify-self: start; }
+.lineup-diagram { max-width: 620px; }
+.lineup-diagram .landmark { fill: var(--bad); fill-opacity: 0.08; stroke: var(--bad); stroke-width: 0.08; stroke-dasharray: 0.3 0.25; }
+.lineup-diagram .drop { stroke: var(--bad); stroke-width: 0.12; opacity: 0.8; }
+.lineup-diagram .drop-head { fill: var(--bad); }
+.lineup-diagram .man-line { stroke: var(--bad); stroke-width: 0.1; stroke-dasharray: 0.25 0.2; opacity: 0.8; }
+.lineup-diagram .off-muted { fill: var(--wr-ink); opacity: 0.55; }
+.lineup-diagram .dot-label { font-size: 0.6px; }
+.lineup-diagram .name-label { font-size: 0.75px; font-weight: 600; fill: var(--ink); stroke: var(--surface); stroke-width: 0.18; paint-order: stroke; }
+.lineup-diagram .role-label { font-size: 0.55px; fill: var(--bad); stroke: var(--surface); stroke-width: 0.15; paint-order: stroke; }

@@ -13,6 +13,8 @@ export interface Player {
   ratings: Ratings;
   /** One-line description of their game. */
   note?: string;
+  /** The preset type they were built from (e.g. "Burner"). */
+  type?: string;
   /** QB ratings (1 to 10). Anyone without them throws like a 5. */
   arm?: number;
   poise?: number;

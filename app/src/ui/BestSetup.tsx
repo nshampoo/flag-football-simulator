@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { ARCHETYPE_DESCRIPTIONS, ARCHETYPE_LABELS, ARCHETYPE_NAMES, type ArchetypeName } from '../engine/archetypes';
 import { COVERAGE_DESCRIPTIONS, COVERAGE_LABELS, type DefenseCall } from '../engine/coverage';
-import { MY_TEAM } from '../engine/roster';
 import type { SearchResult, Setup } from '../engine/search';
-import { jobLabel, names, pct, RUSH_LABELS } from './labels';
+import type { Player } from '../engine/types';
+import { jobLabel, nameMap, pct, RUSH_LABELS } from './labels';
+import { LineupDiagram } from './LineupDiagram';
 import type { SearchMessage } from './search.worker';
 
 const ROUTE_LABELS: Record<string, string> = {
@@ -12,6 +13,9 @@ const ROUTE_LABELS: Record<string, string> = {
 };
 
 interface Props {
+  roster: Player[];
+  /** Changes whenever the roster does, so results for an old roster aren't shown. */
+  rosterKey: string;
   archetype: ArchetypeName;
   setArchetype: (a: ArchetypeName) => void;
   onWatch: (call: DefenseCall) => void;
@@ -19,9 +23,9 @@ interface Props {
 
 type State = { status: 'idle' } | { status: 'running'; fraction: number; label: string } | { status: 'done'; result: SearchResult };
 
-export function BestSetup({ archetype, setArchetype, onWatch }: Props) {
-  // Results are kept per opponent for the visit, so flipping between opponents doesn't rerun.
-  const [results, setResults] = useState<Partial<Record<ArchetypeName, SearchResult>>>({});
+export function BestSetup({ roster, rosterKey, archetype, setArchetype, onWatch }: Props) {
+  // Results are kept per opponent and roster for the visit, so flipping between opponents doesn't rerun.
+  const [results, setResults] = useState<Record<string, SearchResult>>({});
   const [state, setState] = useState<State>({ status: 'idle' });
   const worker = useRef<Worker | undefined>(undefined);
 
@@ -32,20 +36,21 @@ export function BestSetup({ archetype, setArchetype, onWatch }: Props) {
     const w = new Worker(new URL('./search.worker.ts', import.meta.url), { type: 'module' });
     worker.current = w;
     const target = archetype;
+    const key = `${target}|${rosterKey}`;
     setState({ status: 'running', fraction: 0, label: 'Starting' });
     w.onmessage = (e: MessageEvent<SearchMessage>) => {
       if (e.data.type === 'progress') setState({ status: 'running', fraction: e.data.fraction, label: e.data.label });
       else {
         const result = e.data.result;
-        setResults((r) => ({ ...r, [target]: result }));
+        setResults((r) => ({ ...r, [key]: result }));
         setState({ status: 'done', result });
         w.terminate();
       }
     };
-    w.postMessage({ archetype: target });
+    w.postMessage({ archetype: target, roster });
   };
 
-  const result = results[archetype];
+  const result = results[`${archetype}|${rosterKey}`];
   const running = state.status === 'running';
 
   return (
@@ -73,12 +78,13 @@ export function BestSetup({ archetype, setArchetype, onWatch }: Props) {
         )}
       </div>
 
-      {result && <CallCard archetype={archetype} result={result} onWatch={onWatch} />}
+      {result && <CallCard roster={roster} archetype={archetype} result={result} onWatch={onWatch} />}
     </div>
   );
 }
 
-function CallCard({ archetype, result, onWatch }: { archetype: ArchetypeName; result: SearchResult; onWatch: (c: DefenseCall) => void }) {
+function CallCard({ roster, archetype, result, onWatch }: { roster: Player[]; archetype: ArchetypeName; result: SearchResult; onWatch: (c: DefenseCall) => void }) {
+  const names = nameMap(roster);
   const [best, next] = result.ranked;
   const margin = next.summary.yardsPerPlay - best.summary.yardsPerPlay;
   const close = margin < Math.hypot(best.se, next.se);
@@ -124,7 +130,16 @@ function CallCard({ archetype, result, onWatch }: { archetype: ArchetypeName; re
 
       <div className="card">
         <h3>Lineup</h3>
-        <Lineup setup={best} />
+        <Lineup roster={roster} setup={best} />
+      </div>
+
+      <div className="card wide diagram-card">
+        <h3>Where everyone lines up</h3>
+        <LineupDiagram call={best.call} roster={roster} />
+        <p className="hint">
+          Before the snap, against a trips formation. Dashed circles are zone spots (arrows show a drop when it's far),
+          dotted lines connect man defenders to their receiver, and blue is their offense.
+        </p>
       </div>
 
       <div className="card wide">
@@ -156,9 +171,9 @@ function CallCard({ archetype, result, onWatch }: { archetype: ArchetypeName; re
   );
 }
 
-function Lineup({ setup }: { setup: Setup }) {
-  const rows = MY_TEAM.map((p) => ({
-    name: p.name,
+function Lineup({ roster, setup }: { roster: Player[]; setup: Setup }) {
+  const rows = roster.map((p) => ({
+    name: `${p.name} (${p.type})`,
     job: p.id === setup.call.rusherId ? `Rusher (${RUSH_LABELS[setup.call.rushMode].toLowerCase()})` : jobLabel(setup.call.jobs[p.id]),
   }));
   return (

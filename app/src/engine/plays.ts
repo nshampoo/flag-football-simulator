@@ -40,8 +40,10 @@ function routeMix(rng: Rng, t: Tendencies): RouteName[] {
   return shuffle(rng, mix.slice(0, 5));
 }
 
-export function samplePlay(rng: Rng, offense: Offense, t: Tendencies): Play {
-  const formation = pick(rng, FORMATION_NAMES);
+export function samplePlay(rng: Rng, offense: Offense, t: Tendencies, only?: FormationName): Play {
+  // Drawn even when the formation is fixed, so the rest of the play's randomness doesn't shift.
+  const sampled = pick(rng, FORMATION_NAMES);
+  const formation = only ?? sampled;
   const strong: 1 | -1 = rng() < 0.5 ? 1 : -1;
   const spots = shuffle<Vec>(rng, FORMATIONS[formation]);
   const routes = routeMix(rng, t);

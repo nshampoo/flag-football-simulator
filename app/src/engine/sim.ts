@@ -2,7 +2,7 @@
 // catch, then run after catch (or a scramble).
 import type { Tendencies } from './archetypes';
 import type { DefenseCall, Job, Zone } from './coverage';
-import { CENTER_SPOT, QB_SPOT } from './formations';
+import { CENTER_SPOT, QB_SPOT, type FormationName } from './formations';
 import { samplePlay, type Play } from './plays';
 import { jitter, physical, qbPhysical, type Physical } from './ratings';
 import { gauss, mulberry32, type Rng } from './rng';
@@ -62,6 +62,8 @@ export interface SimInput {
   seed: number;
   /** Keep per-tick positions for the viewer. */
   record?: boolean;
+  /** Always use this formation (e.g. for a lineup diagram). */
+  formation?: FormationName;
 }
 
 interface Body {
@@ -255,7 +257,7 @@ function seenAt(r: Runner, lag: number): { pos: Vec; vel: Vec } {
 export function simulatePlay(input: SimInput): PlayRecording {
   const { offense, tendencies: tend, call, record } = input;
   const rng = mulberry32(input.seed);
-  const play = samplePlay(rng, offense, tend);
+  const play = samplePlay(rng, offense, tend, input.formation);
 
   const offensePlayers = new Map([...offense.receivers, offense.center].map((p) => [p.id, p]));
   const paths: Record<string, Vec[]> = {};
