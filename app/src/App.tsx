@@ -6,7 +6,7 @@ import type { Picks } from './ui/labels';
 import { Roster } from './ui/Roster';
 import { Viewer } from './ui/Viewer';
 
-type View = 'viewer' | 'best' | 'roster';
+type View = 'viewer' | 'best';
 const ROSTER_KEY = 'ffs-roster';
 
 /** The saved roster, if it's still valid; storage can be missing or blocked. */
@@ -45,13 +45,20 @@ export default function App() {
       <header>
         <h1>Flag Football Defense Simulator</h1>
         <p>7v7, one rusher on a 5 second count. Watch single plays, or find the best setup for a matchup.</p>
-        <nav className="tabs" aria-label="View">
-          {tab('viewer', 'Play viewer')}
-          {tab('best', 'Best setup')}
-          {tab('roster', 'Roster')}
-        </nav>
       </header>
       <Guide archetype={picks.archetype} coverage={picks.coverage} rusherType={rusherType} rushMode={picks.rushMode} />
+      <Roster
+        slots={slots}
+        setSlots={(next) => {
+          setSlots(next);
+          // A searched setup was built for the old roster.
+          setPicks((p) => ({ ...p, call: undefined }));
+        }}
+      />
+      <nav className="tabs" aria-label="View">
+        {tab('viewer', 'Play viewer')}
+        {tab('best', 'Best setup')}
+      </nav>
       {view === 'viewer' && <Viewer roster={roster} picks={picks} setPicks={setPicks} />}
       {view === 'best' && (
         <BestSetup
@@ -63,16 +70,6 @@ export default function App() {
             setPicks((p) => ({ ...p, coverage: call.coverage, rusherId: call.rusherId, rushMode: call.rushMode, call }));
             setView('viewer');
             window.scrollTo({ top: 0 });
-          }}
-        />
-      )}
-      {view === 'roster' && (
-        <Roster
-          slots={slots}
-          setSlots={(next) => {
-            setSlots(next);
-            // A searched setup was built for the old roster.
-            setPicks((p) => ({ ...p, call: undefined }));
           }}
         />
       )}

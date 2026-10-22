@@ -64,7 +64,7 @@ export function Guide({ archetype, coverage, rusherType, rushMode }: Props) {
               })}
             </tbody>
           </table>
-          <p className="hint">Ratings are 1 to 10. Build your team from these types on the Roster tab. Highlighted: the rusher's type.</p>
+          <p className="hint">Ratings are 1 to 10. Build your team from these types in the Roster panel. Highlighted: the rusher's type.</p>
         </div>
         <table>
           <thead><tr><th>Rush</th><th>What the rusher does</th></tr></thead>

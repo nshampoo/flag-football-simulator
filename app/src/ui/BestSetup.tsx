@@ -3,7 +3,7 @@ import { ARCHETYPE_DESCRIPTIONS, ARCHETYPE_LABELS, ARCHETYPE_NAMES, type Archety
 import { COVERAGE_DESCRIPTIONS, COVERAGE_LABELS, type DefenseCall } from '../engine/coverage';
 import type { SearchResult, Setup } from '../engine/search';
 import type { Player } from '../engine/types';
-import { jobLabel, nameMap, pct, RUSH_LABELS } from './labels';
+import { jobLabel, nameMap, pct, RUSH_LABELS, withType } from './labels';
 import { LineupDiagram } from './LineupDiagram';
 import type { SearchMessage } from './search.worker';
 
@@ -173,7 +173,7 @@ function CallCard({ roster, archetype, result, onWatch }: { roster: Player[]; ar
 
 function Lineup({ roster, setup }: { roster: Player[]; setup: Setup }) {
   const rows = roster.map((p) => ({
-    name: `${p.name} (${p.type})`,
+    name: withType(p.name, p.type),
     job: p.id === setup.call.rusherId ? `Rusher (${RUSH_LABELS[setup.call.rushMode].toLowerCase()})` : jobLabel(setup.call.jobs[p.id]),
   }));
   return (

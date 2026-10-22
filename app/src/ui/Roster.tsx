@@ -1,5 +1,6 @@
 import { DEFAULT_SLOTS, PLAYER_TYPE_IDS, PLAYER_TYPES, type PlayerType, type RosterSlot } from '../engine/roster';
 import { RATINGS } from '../engine/types';
+import { withType } from './labels';
 
 const RATING_LABELS = { speed: 'Spd', agility: 'Agi', hands: 'Hnd', catchHeight: 'Ht', man: 'Man', zone: 'Zone' } as const;
 
@@ -8,13 +9,16 @@ interface Props {
   setSlots: (slots: RosterSlot[]) => void;
 }
 
-/** Build the team from preset player types: a name and a type for each of the 7 spots. */
+/** Build the team from preset player types: a name and a type for each of the 7 spots. Collapsed, it lists the team. */
 export function Roster({ slots, setSlots }: Props) {
   const update = (i: number, change: Partial<RosterSlot>) => setSlots(slots.map((s, j) => (j === i ? { ...s, ...change } : s)));
+  const team = slots.map((s, i) => withType(s.name.trim() || `${PLAYER_TYPES[s.type].label} ${i + 1}`, PLAYER_TYPES[s.type].label)).join(', ');
 
   return (
-    <div className="card roster">
-      <h2>Your roster</h2>
+    <details className="card roster">
+      <summary>
+        Roster: <span className="team">{team}</span>
+      </summary>
       <p className="muted">
         Pick a type for each of your 7 players (the same type can appear more than once) and give them a name. The play
         viewer and the best-setup search both use this team. It's saved in this browser.
@@ -52,6 +56,6 @@ export function Roster({ slots, setSlots }: Props) {
         </table>
       </div>
       <button onClick={() => setSlots(DEFAULT_SLOTS)}>Reset to one of each type</button>
-    </div>
+    </details>
   );
 }

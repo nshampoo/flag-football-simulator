@@ -6,7 +6,7 @@ import { OPPONENT } from '../engine/roster';
 import { simulatePlay, type PlayResult } from '../engine/sim';
 import { DT, type Player } from '../engine/types';
 import { Field } from './Field';
-import { nameMap, pct, ratingsLine, RUSH_LABELS, type Picks } from './labels';
+import { nameMap, pct, ratingsLine, RUSH_LABELS, withType, type Picks } from './labels';
 
 const SPEEDS = [0.25, 0.5, 1];
 
@@ -137,7 +137,7 @@ export function Viewer({ roster, picks, setPicks }: Props) {
         <label>
           Rusher
           <select value={rusherId} onChange={(e) => pick({ rusherId: e.target.value })}>
-            {roster.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.type})</option>)}
+            {roster.map((p) => <option key={p.id} value={p.id}>{withType(p.name, p.type)}</option>)}
           </select>
           <span className="hint">
             {rusher.type}: {rusher.note}

@@ -21,6 +21,11 @@ export interface Picks {
   call?: DefenseCall;
 }
 
+/** "Nick (Burner)", or just "Burner" when the name is the type. */
+export function withType(name: string, type?: string): string {
+  return !type || name === type ? name : `${name} (${type})`;
+}
+
 export function jobLabel(job: Job): string {
   if (job.kind === 'man') return `Man on ${offenseNames.get(job.targetId)}${job.shade ? ` (${job.shade === 'over' ? 'over the top' : 'underneath'})` : ''}`;
   const x = job.zone.landmark.x;

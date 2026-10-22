@@ -194,7 +194,7 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - [x] Best setup view: pick an opponent, run the search in a web worker (~9 s), get a call card (best
   defense, rusher, lineup, runner-up and margin, stats, watch-for, every defense ranked) and "Watch it"
   in the play viewer
-- [x] Roster tab: build the team from preset player types (Burner, Glue, Tall, Ballhawk, Steady,
+- [x] Roster panel (collapsible, under the guide, above the Play viewer / Best setup tabs): build the team from preset player types (Burner, Glue, Tall, Ballhawk, Steady,
   Quick, Vet), repeats allowed, named; saved in the browser. Real ratings aren't needed.
 - [x] Lineup diagram on the call card: everyone's pre-snap spot vs a trips formation, with zone spots,
   drops, man assignments, and roles
