@@ -1,0 +1,97 @@
+/* Tokens match shampoe.com's site.css, so the app reads as part of the site under its header.
+   Light by default; dark follows the system unless the site's toggle set data-theme. */
+:root {
+  --bg: #eceff3; --surface: #ffffff; --surface-2: #f6f8fa;
+  --ink: #15191e; --ink-2: #3f4852; --muted: #59626d; --faint: #8a929c;
+  --rule: #dfe3e8; --rule-soft: #eef1f4;
+  --link: #1d5fb8; --link-hover: #123f7a; --accent: #2a6fd0; --on-accent: #ffffff;
+  --good: #1a7a43; --good-bg: #e2f3e8; --bad: #b3261e; --bad-bg: #fbe6e4; --even-bg: #eef1f4;
+  --shadow: 0 1px 2px rgba(21, 25, 30, 0.06);
+  --qb-tag: #fbe3ec; --qb-ink: #a4174f;
+  --rb-tag: #dcf2e8; --rb-ink: #11704a;
+  --wr-tag: #e1ecfb; --wr-ink: #1f5cb3;
+  --te-tag: #fbebd9; --te-ink: #9c4f08;
+  --xx-tag: #e6e9ee; --xx-ink: #3f4852;
+  --font: Geist, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --gutter: 24px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1215; --surface: #181c21; --surface-2: #1f242a;
+    --ink: #eef1f4; --ink-2: #c3cad2; --muted: #9aa3ad; --faint: #737c86;
+    --rule: #2a3038; --rule-soft: #232930;
+    --link: #7fb2f0; --link-hover: #a9cbf6; --accent: #6ea8f5; --on-accent: #0f1215;
+    --good: #4cc38a; --good-bg: #16301f; --bad: #f08a80; --bad-bg: #3a1c1a; --even-bg: #232930;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --qb-tag: #3b1a28; --qb-ink: #f39bbd;
+    --rb-tag: #15322a; --rb-ink: #7fd8b1;
+    --wr-tag: #1a2a40; --wr-ink: #8ab8f2;
+    --te-tag: #3a2614; --te-ink: #f0b27a;
+    --xx-tag: #262c33; --xx-ink: #c3cad2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1215; --surface: #181c21; --surface-2: #1f242a;
+  --ink: #eef1f4; --ink-2: #c3cad2; --muted: #9aa3ad; --faint: #737c86;
+  --rule: #2a3038; --rule-soft: #232930;
+  --link: #7fb2f0; --link-hover: #a9cbf6; --accent: #6ea8f5; --on-accent: #0f1215;
+  --good: #4cc38a; --good-bg: #16301f; --bad: #f08a80; --bad-bg: #3a1c1a; --even-bg: #232930;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --qb-tag: #3b1a28; --qb-ink: #f39bbd;
+  --rb-tag: #15322a; --rb-ink: #7fd8b1;
+  --wr-tag: #1a2a40; --wr-ink: #8ab8f2;
+  --te-tag: #3a2614; --te-ink: #f0b27a;
+  --xx-tag: #262c33; --xx-ink: #c3cad2;
+  color-scheme: dark;
+}
+@media (max-width: 480px) { :root { --gutter: 16px; } }
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font); }
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); text-decoration: underline; }
+button, input, select { font: inherit; color: inherit; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.25; font-weight: 600; }
+button, input, select { font: inherit; color: inherit; }
+h1 { font-size: 22px; margin: 0; line-height: 1.25; font-weight: 600; }
+
+.app { max-width: 1040px; margin: 0 auto; padding: 24px var(--gutter) 48px; }
+.app > header p { color: var(--muted); margin: 4px 0 20px; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow); padding: 14px; }
+.field { width: 100%; height: auto; display: block; border-radius: 6px; }
+.field .turf { fill: var(--good-bg); }
+.field .yard { stroke: var(--rule); stroke-width: 0.08; }
+.field .los { stroke: var(--accent); stroke-width: 0.15; }
+.field .goal { stroke: var(--ink-2); stroke-width: 0.2; }
+.field .route { fill: none; stroke: var(--wr-ink); stroke-width: 0.12; stroke-dasharray: 0.4 0.3; opacity: 0.55; }
+.field .route.primary { stroke-width: 0.2; opacity: 0.9; }
+.field .off { fill: var(--wr-ink); }
+.field .def { fill: var(--bad); }
+.field .rusher { fill: var(--te-ink); }
+.field .qb { fill: var(--qb-ink); }
+.field .ball { fill: #8a4b21; stroke: #fff; stroke-width: 0.08; }
+.field text { font: 0.75px var(--font); fill: #fff; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+
+.controls { display: grid; gap: 10px; }
+.controls label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.controls select { padding: 6px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface-2); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+button { padding: 7px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface-2); cursor: pointer; }
+button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.scrub { display: flex; gap: 8px; align-items: center; margin-top: 10px; font: 13px var(--mono); color: var(--muted); }
+.scrub input { flex: 1; }
+.result { margin-top: 10px; font-size: 14px; }
+.result b { font-weight: 600; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; background: var(--c); }
+table.stats { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+table.stats td { padding: 3px 0; border-bottom: 1px solid var(--rule-soft); }
+table.stats td:last-child { text-align: right; font-family: var(--mono); }
+.muted { color: var(--muted); font-size: 13px; }

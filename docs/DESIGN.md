@@ -141,7 +141,7 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - [x] Tick sim: routes, man trailing, rubs, 5 s rush (hard/contain), QB reads, scramble, catch/INT, YAC (needs calibration, §11)
 - [x] Monte Carlo summary (`engine/montecarlo.ts`)
 - [x] Monte Carlo CLI (`npm run sim`): ranks rusher × rush mode in man coverage
-- [ ] Basic play viewer (animated field, scrubber, run 1,000)
+- [x] Basic play viewer (animated field, scrubber, run 1,000)
 - [ ] Zones: landmarks, triggers, Cover 2, Cover 3, Cover 3 Aggressive, lurker
 - [ ] Man + bracket
 - [ ] Personnel search across schemes
