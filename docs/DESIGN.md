@@ -125,7 +125,7 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 ## 10. Roadmap
 
 **v1 (play by play)**
-- [ ] Placeholder rosters (swap in real ratings later)
+- [x] Placeholder rosters (swap in real ratings later)
 - [ ] Route library, formations, sampled plays per archetype
 - [ ] Tick sim: routes, man trailing, rubs, 5 s rush (hard/contain), QB reads, scramble, catch/INT, YAC
 - [ ] Monte Carlo runner in Node
