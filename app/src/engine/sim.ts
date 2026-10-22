@@ -35,6 +35,15 @@ export interface PlayResult {
   pressured: boolean;
   /** Man defenders slowed by traffic. */
   rubs: number;
+  /** Flag pulls the ball carrier (QB included) dodged. */
+  dodges: number;
+}
+
+/** A missed flag pull. */
+export interface Dodge {
+  t: number;
+  carrierId: string;
+  defenderId: string;
 }
 
 export interface Frame {
@@ -49,6 +58,7 @@ export interface PlayRecording {
   /** Route waypoints per receiver, starting at their alignment. */
   paths: Record<string, Vec[]>;
   frames: Frame[];
+  dodges: Dodge[];
 }
 
 export interface SimInput {
@@ -102,11 +112,12 @@ const body = (player: Player, pos: Vec, rng: Rng): Body => {
  * One flag pull attempt by a defender within reach. Elusive carriers make it miss, and a defender
  * who misses stumbles: momentum gone, and a beat before they can try again.
  */
-function pullsFlag(d: Body, carrier: Body, t: number, rng: Rng): boolean {
+function pullsFlag(d: Body, carrier: Body, t: number, rng: Rng, dodges: Dodge[]): boolean {
   if (t < d.nextPull) return false;
   if (rng() < d.phys.flagPull * (1 - carrier.phys.elusiveness)) return true;
   d.vel = mul(d.vel, 0.3);
   d.nextPull = t + 0.3 + d.phys.reaction;
+  dodges.push({ t, carrierId: carrier.id, defenderId: d.id });
   return false;
 }
 
@@ -230,6 +241,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
   const everyone: Body[] = [...runners, ...covers, rusher, qb];
 
   const frames: Frame[] = [];
+  const dodges: Dodge[] = [];
   const snapshot = (t: number, ball: Vec) => {
     if (!record) return;
     const pos: Record<string, Vec> = {};
@@ -239,11 +251,12 @@ export function simulatePlay(input: SimInput): PlayRecording {
 
   let t = 0;
   let pressured = false;
-  const done = (result: Omit<PlayResult, 'pressured' | 'rubs'>): PlayRecording => ({
+  const done = (result: Omit<PlayResult, 'pressured' | 'rubs' | 'dodges'>): PlayRecording => ({
     play,
     paths,
     frames,
-    result: { ...result, pressured, rubs: covers.filter((c) => c.rubbed).length },
+    dodges,
+    result: { ...result, pressured, rubs: covers.filter((c) => c.rubbed).length, dodges: dodges.length },
   });
 
   // Run after catch or scramble: the carrier heads upfield away from nearby defenders; everyone pursues.
@@ -282,7 +295,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
       if (yards >= FIELD.goalLine) return done({ outcome, yards: FIELD.goalLine, touchdown: true, ...extra });
       if (Math.abs(carrier.pos.x) > FIELD.halfWidth) return done({ outcome, yards, touchdown: false, ...extra });
       for (const d of defenders) {
-        if (dist(d.pos, carrier.pos) < 1 && pullsFlag(d, carrier, t, rng)) return done({ outcome, yards, touchdown: false, ...extra });
+        if (dist(d.pos, carrier.pos) < 1 && pullsFlag(d, carrier, t, rng, dodges)) return done({ outcome, yards, touchdown: false, ...extra });
       }
     }
     return done({ outcome, yards: carrier.pos.y, touchdown: false, ...extra });
@@ -354,7 +367,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
     const pressure = clamp((4 - gap) / 3, 0, 1);
     if (pressure > 0.5) pressured = true;
 
-    if (gap < 1 && pullsFlag(rusher, qb, t, rng)) {
+    if (gap < 1 && pullsFlag(rusher, qb, t, rng, dodges)) {
       snapshot(t, qb.pos);
       return done({ outcome: 'sack', yards: qb.pos.y, touchdown: false });
     }

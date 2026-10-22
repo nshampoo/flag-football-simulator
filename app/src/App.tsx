@@ -77,7 +77,7 @@ export default function App() {
       </header>
       <div className="layout">
         <div className="card">
-          <Field rec={rec} frame={frame} defenseIds={defenseIds} rusherId={rusherId} qbId={OPPONENT.qb.id} names={names} />
+          <Field rec={rec} frame={frame} time={time} dodges={rec.dodges} defenseIds={defenseIds} rusherId={rusherId} qbId={OPPONENT.qb.id} names={names} />
           <div className="legend">
             <span style={{ '--c': 'var(--wr-ink)' } as React.CSSProperties}>Offense</span>
             <span style={{ '--c': 'var(--qb-ink)' } as React.CSSProperties}>QB</span>
@@ -97,7 +97,8 @@ export default function App() {
             <div className="muted">
               {rec.play.formation} formation · {r.throwTime !== undefined ? `thrown at ${r.throwTime.toFixed(1)}s` : 'no throw'}
               {r.separation !== undefined && ` · ${r.separation.toFixed(1)} yds of separation`}
-              {r.rubs > 0 && ` · ${r.rubs} rubbed`} · seed {seed}
+              {r.rubs > 0 && ` · ${r.rubs} rubbed`}
+              {r.dodges > 0 && ` · ${r.dodges} missed flag pull${r.dodges > 1 ? 's' : ''}`} · seed {seed}
             </div>
           </div>
         </div>
