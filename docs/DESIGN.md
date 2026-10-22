@@ -98,7 +98,9 @@ Defense = coverage + rusher behavior + personnel.
 **Coverages (v1)**
 1. **Man (Cover 0)**: everyone has an assignment, no help.
 2. **Man + bracket**: two defenders on their favorite, leaving their weakest eligible (often the center) uncovered.
-3. **Cover 2**: 2 deep halves, 4 underneath zones.
+3. **Cover 2**: 2 deep halves, 4 underneath zones. This is our base defense (two high), and our hooks
+   play 3 yds deeper than a textbook Cover 2 (10 instead of 7), except on short yardage. Short
+   yardage belongs to the v2 situational layer.
 4. **Cover 3**: outside thirds at depth, middle safety deep.
 5. **Cover 3 Aggressive**: squat thirds a touch inside (±7.5 yds, 5 deep) jump short breaks and
    hand verticals to the hook player right behind them (±7, 9 deep). Those hooks are dynamic: they
@@ -113,7 +115,9 @@ lean toward the QB's eyes, break on the throw sooner than man defenders, and ign
 - **deep**: stay on top of the deepest threat in their band and split multiple threats; never more
   than 8 yds past the landmark (chasing a go to 35 yds leaves a hole at 15). They read a vertical stem
   off the line as a threat right away and turn and run to carry it (only plain drops are a backpedal).
-- **under**: undercut the receiver nearest the landmark; past the carry depth, pass him off.
+- **under**: undercut the receiver nearest the landmark; past the carry depth, pass him off. With no
+  job: if someone sprinted past them, sit back to ~10 to 14 yds and fill the void; otherwise sink back
+  2.5 yds. (From play: "if someone sprints past me, I'm more willing to sit back 10 yards.")
 - **squat** (Cover 3 Aggressive corners): jump quick breaks in their band; leave verticals to the
   sink behind them.
 - **sink** (Cover 3 Aggressive hooks): play a hook right behind the squat; if a receiver gets past
@@ -197,6 +201,11 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - Calibration: log 20 to 30 real plays and tune the model until results roughly match.
 
 ## 11. Calibration status
+
+**Update (underneath fill/sink + deeper Cover 2 hooks):** Cover 2 is now best vs Gunslinger,
+Scrambler, and Scared QB (5.6 to 6.1 yds/play) and gives up the fewest big plays of anything (4 to 9%),
+up from worst zone (9 to 12 yds/play). Cover 3 Aggressive is still best vs Dink and Dunk (4.1) and
+Balanced; Cover 3 improved (Gunslinger 9.9 → 8.0).
 
 **Update (safety rule + Cover 3 Aggressive rebuild):** Cover 3 Aggressive is now the best zone (4.2 to
 7.3 yds/play) and best overall vs Dink and Dunk, Hero Ball, and Balanced. Go balls rarely beat any

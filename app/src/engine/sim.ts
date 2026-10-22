@@ -129,6 +129,11 @@ const GO_RANGE = 12;
 /** Yards a safety stays over the top of a go, and the deepest they'll carry it. */
 const GO_CUSHION = 3;
 const GO_MAX_DEPTH = 30;
+/** Underneath defenders with no job: how far they sink, and where they fill if someone sprinted past. */
+const NO_JOB_SINK = 2.5;
+const FILL_BACK = 3;
+const FILL_DEPTH = 10;
+const FILL_MAX = 14;
 
 const body = (player: Player, pos: Vec, rng: Rng): Body => {
   const p = jitter(player, rng);
@@ -379,6 +384,12 @@ export function simulatePlay(input: SimInput): PlayRecording {
       else if (near) {
         const off = sub(undercut(near.pos, 1.5), L);
         target = add(L, clampLen(off, z.radius + 1));
+      } else if (z.kind === 'under') {
+        // No job: if someone sprinted past, sit back and fill the void; otherwise sink a little.
+        const sprintedPast = seen.some((s) => inBand(s.pos) && s.pos.y > c.pos.y + 1 && s.vel.y > GO_SPEED);
+        target = sprintedPast
+          ? { x: home.x, y: clamp(L.y + FILL_BACK, FILL_DEPTH, FILL_MAX) }
+          : add(home, { x: 0, y: NO_JOB_SINK });
       }
     } else if (z.kind === 'squat') {
       // Jump short breaks; anything vertical is the sink zone's, so stay home underneath.
