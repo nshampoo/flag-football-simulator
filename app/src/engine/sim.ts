@@ -81,8 +81,9 @@ interface Runner extends Body {
   heading: Vec;
   delay: number;
   sitting: boolean;
-  /** Where the route ended; improvising stays near it. */
-  routeEnd?: Vec;
+  /** After the route: where they're heading, and when they'll look again. */
+  improvSpot?: Vec;
+  improvUntil: number;
   /** Past positions, one per tick, for defenders reacting with a lag. */
   trail: Vec[];
 }
@@ -99,8 +100,12 @@ const MAX_TIME = 20;
 /** Room (yards) a planned quick throw needs: soft coverage. */
 const QUICK_BAR = 1;
 const YAC_TIME = 8;
-/** How far (yards) a receiver strays from where their route ended while improvising. */
-const IMPROV_RANGE = 4;
+/** After their route, a receiver this far (yards) from every defender stays put and is a target. */
+const OPEN = 3;
+/** How far (yards) a covered receiver will go looking for open space. */
+const IMPROV_RANGE = 8;
+/** Seconds a receiver sticks with a spot before looking again. */
+const IMPROV_COMMIT = 1;
 /** Deep defenders go at most this far past their landmark. */
 const DEEP_CAP = 8;
 
@@ -140,22 +145,43 @@ function steer(b: Body, target: Vec, maxSpeed = b.phys.topSpeed) {
   b.pos = add(b.pos, mul(b.vel, DT));
 }
 
+/**
+ * Route's done, play's still alive: open receivers stay put; covered ones run to the most open spot
+ * nearby, keeping their distance from teammates so they don't bunch into the same hole.
+ */
+function improvise(r: Runner, t: number, defenders: readonly Body[], teammates: readonly Runner[]) {
+  const room = (p: Vec) => defenders.reduce((best, d) => Math.min(best, dist(d.pos, p)), Infinity);
+  const covered = room(r.pos) < OPEN;
+  // Covered and not going anywhere (got there, or was open until someone closed): look again now.
+  const stuck = covered && (!r.improvSpot || dist(r.pos, r.improvSpot) < 0.5);
+  if (!r.improvSpot || t >= r.improvUntil || stuck) {
+    r.improvUntil = t + IMPROV_COMMIT;
+    if (!covered) r.improvSpot = r.pos;
+    else {
+      let best = { spot: r.pos, score: -Infinity };
+      for (let dx = -IMPROV_RANGE; dx <= IMPROV_RANGE; dx += 2) {
+        for (let dy = -IMPROV_RANGE; dy <= IMPROV_RANGE; dy += 2) {
+          if (Math.hypot(dx, dy) < 2) continue; // covered means move
+          const spot = { x: clamp(r.pos.x + dx, -FIELD.halfWidth + 1, FIELD.halfWidth - 1), y: clamp(r.pos.y + dy, 1, 25) };
+          const crowd = teammates.reduce((sum, m) => (m === r ? sum : sum + Math.max(0, 4 - dist(m.pos, spot)) * 0.5), 0);
+          const score = room(spot) - 0.15 * dist(r.pos, spot) - crowd;
+          if (score > best.score) best = { spot, score };
+        }
+      }
+      r.improvSpot = best.spot;
+    }
+  }
+  steer(r, r.improvSpot, r.phys.topSpeed * 0.8);
+}
+
 /** Planned cuts: the receiver knows the break, losing speed by cut angle and agility. */
-function runRoute(r: Runner, t: number, defenders: readonly Body[]) {
+function runRoute(r: Runner, t: number, defenders: readonly Body[], teammates: readonly Runner[]) {
   if (t < r.delay) {
     r.trail.push(r.pos);
     return;
   }
   if (r.sitting) {
-    // Route's done: find a hole near where it ended, away from the nearest defender, in bounds and
-    // past the line.
-    const home = (r.routeEnd ??= r.pos);
-    const near = defenders.reduce((a, b) => (dist(b.pos, r.pos) < dist(a.pos, r.pos) ? b : a));
-    let away = norm(sub(r.pos, near.pos));
-    if (Math.abs(r.pos.x) > FIELD.halfWidth - 2) away = add(away, { x: -Math.sign(r.pos.x), y: 0 });
-    if (r.pos.y < 2) away = add(away, { x: 0, y: 1 });
-    const spot = add(home, clampLen(sub(add(r.pos, mul(norm(away), 3)), home), IMPROV_RANGE));
-    steer(r, spot, r.phys.topSpeed * 0.5);
+    improvise(r, t, defenders, teammates);
     r.trail.push(r.pos);
     return;
   }
@@ -218,6 +244,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
       heading: norm(sub(path[0], a.start)),
       delay: a.delay,
       sitting: false,
+      improvUntil: 0,
       trail: [a.start],
     };
   });
@@ -360,7 +387,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
       }
       for (const r of runners) {
         if (r === carrier) continue;
-        if (holdCoverage) runRoute(r, t, covers);
+        if (holdCoverage) runRoute(r, t, covers, runners);
         else steer(r, r.pos, 2);
       }
       t += DT;
@@ -412,7 +439,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
   // Pre-throw: routes, coverage, rush, and the QB's read.
   let thrown: (NonNullable<ReturnType<typeof evaluate>> & { forced: boolean; pressure: number }) | undefined;
   while (!thrown) {
-    for (const r of runners) runRoute(r, t, covers);
+    for (const r of runners) runRoute(r, t, covers, runners);
 
     for (const c of covers) coverStep(c);
 
@@ -470,7 +497,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
   while (t < throwTime + thrown.travel) {
     for (const r of runners) {
       if (r === target && t >= throwTime + 0.1) steer(r, land);
-      else runRoute(r, t, covers);
+      else runRoute(r, t, covers, runners);
     }
     qbLook = target;
     for (const c of covers) {

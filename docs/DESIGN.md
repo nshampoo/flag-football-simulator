@@ -113,8 +113,10 @@ lean toward the QB's eyes, break on the throw sooner than man defenders, and ign
 Personnel is a fit heuristic for now: deep spots to fast, tall zone players, the lurker to the best
 zone player with hands, squats to speed and agility, and underneath zones to whoever's left.
 
-Receivers who finish a route improvise to open space, but within 4 yds of where the route ended
-(untethered, they drifted 10+ yds upfield into zone holes).
+Receivers who finish a route while the play is alive: if open (3+ yds from every defender) they stay
+put and are a target; if covered they run to the most open spot within ~8 yds (scored by room from
+defenders, minus distance to run and crowding teammates), commit to it for ~1 s, and look again
+straight away if they get there still covered.
 
 **Man mechanics**: defenders steer toward where their receiver was a lag ago (lag from Man rating).
 Receivers make planned cuts (losing speed by Agility); defenders react, so separation appears at breaks.
