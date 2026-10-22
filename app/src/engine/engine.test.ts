@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { ARCHETYPES } from './archetypes';
+import { COVERAGES, defenseCall } from './coverage';
 import { runMatchup } from './montecarlo';
 import { samplePlay } from './plays';
 import { physical, scale } from './ratings';
 import { mulberry32 } from './rng';
 import { MY_TEAM, OPPONENT } from './roster';
 import { ROUTE_NAMES, routePath } from './routes';
-import { manCall, simulatePlay } from './sim';
+import { simulatePlay } from './sim';
 import { FIELD, RUSH_COUNT } from './types';
 
-const call = manCall(MY_TEAM, OPPONENT, 'burner', 'hard');
+const call = defenseCall('man', MY_TEAM, OPPONENT, 'burner', 'hard');
 const base = { offense: OPPONENT, tendencies: ARCHETYPES.balanced, defense: MY_TEAM, call };
 
 describe('ratings', () => {
@@ -96,5 +97,49 @@ describe('sim', () => {
     const quick = runMatchup({ ...base, tendencies: ARCHETYPES.dinkAndDunk }, 400);
     expect(scared.sackPct).toBeGreaterThan(quick.sackPct);
     expect(scared.timeToThrow).toBeGreaterThan(quick.timeToThrow);
+  });
+});
+
+describe('coverages', () => {
+  it('gives every non-rusher a job', () => {
+    for (const coverage of COVERAGES) {
+      const c = defenseCall(coverage, MY_TEAM, OPPONENT, 'burner', 'hard');
+      expect(Object.keys(c.jobs).sort()).toEqual(MY_TEAM.filter((p) => p.id !== 'burner').map((p) => p.id).sort());
+    }
+  });
+
+  it('bracket puts two on the favorite and leaves one eligible uncovered', () => {
+    const c = defenseCall('manBracket', MY_TEAM, OPPONENT, 'burner', 'hard');
+    const targets = Object.values(c.jobs).map((j) => (j.kind === 'man' ? j.targetId : ''));
+    expect(targets.filter((id) => id === OPPONENT.favoriteId)).toHaveLength(2);
+    expect(new Set(targets).size).toBe(5);
+  });
+
+  it('every coverage produces plausible numbers', () => {
+    for (const coverage of COVERAGES) {
+      const s = runMatchup({ ...base, call: defenseCall(coverage, MY_TEAM, OPPONENT, 'burner', 'hard') }, 300);
+      expect(s.completionPct, coverage).toBeGreaterThan(0.3);
+      expect(s.completionPct, coverage).toBeLessThan(0.92);
+      expect(s.yardsPerPlay, coverage).toBeGreaterThan(1);
+      expect(s.yardsPerPlay, coverage).toBeLessThan(20);
+    }
+  });
+
+  it('squat corners give up more big plays to a gunslinger than a regular Cover 3', () => {
+    const vs = (coverage: (typeof COVERAGES)[number]) =>
+      runMatchup({ ...base, tendencies: ARCHETYPES.gunslinger, call: defenseCall(coverage, MY_TEAM, OPPONENT, 'burner', 'hard') }, 600);
+    expect(vs('cover3Aggressive').bigPlayPct).toBeGreaterThan(vs('cover3').bigPlayPct);
+  });
+
+  it('the bracket takes targets away from their favorite', () => {
+    const share = (coverage: (typeof COVERAGES)[number]) => {
+      const call = defenseCall(coverage, MY_TEAM, OPPONENT, 'burner', 'hard');
+      let n = 0;
+      for (let seed = 1; seed <= 600; seed++) {
+        if (simulatePlay({ ...base, tendencies: ARCHETYPES.heroBall, call, seed }).result.targetId === OPPONENT.favoriteId) n++;
+      }
+      return n;
+    };
+    expect(share('manBracket')).toBeLessThan(share('man'));
   });
 });

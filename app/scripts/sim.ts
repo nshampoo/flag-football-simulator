@@ -3,7 +3,7 @@
 import { ARCHETYPE_LABELS, ARCHETYPE_NAMES, ARCHETYPES, type ArchetypeName } from '../src/engine/archetypes';
 import { runMatchup, type Summary } from '../src/engine/montecarlo';
 import { MY_TEAM, OPPONENT } from '../src/engine/roster';
-import { manCall, type RushMode } from '../src/engine/sim';
+import { defenseCall, type RushMode } from '../src/engine/coverage';
 
 const [which, playsArg = '1000'] = process.argv.slice(2);
 const plays = Number(playsArg);
@@ -17,7 +17,7 @@ for (const name of archetypes) {
   const rows: { label: string; s: Summary }[] = [];
   for (const rusher of MY_TEAM) {
     for (const mode of ['hard', 'contain'] as RushMode[]) {
-      const call = manCall(MY_TEAM, OPPONENT, rusher.id, mode);
+      const call = defenseCall('man', MY_TEAM, OPPONENT, rusher.id, mode);
       const s = runMatchup({ offense: OPPONENT, tendencies: ARCHETYPES[name], defense: MY_TEAM, call }, plays);
       rows.push({ label: `${rusher.name} (${mode})`, s });
     }

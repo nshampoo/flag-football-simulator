@@ -27,8 +27,10 @@ export interface Physical {
   catchHeightFt: number;
   /** How far behind (seconds) a man defender trails their receiver's moves. */
   manLag: number;
-  /** Zone read quality, 0 to 1 (unused until zones land). */
+  /** Zone read quality, 0 to 1: how much a zone defender leans on the QB's eyes and how fast they break on the throw. */
   zoneRead: number;
+  /** How far behind (seconds) a zone defender reads receivers' moves. */
+  zoneLag: number;
 }
 
 export function physical(r: Ratings): Physical {
@@ -44,6 +46,7 @@ export function physical(r: Ratings): Physical {
     catchHeightFt: scale(r.catchHeight, 8, 10.5),
     manLag: scale(r.man, 0.6, 0.15),
     zoneRead: scale(r.zone, 0, 1),
+    zoneLag: scale(r.zone, 0.6, 0.15),
   };
 }
 

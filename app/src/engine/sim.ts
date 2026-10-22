@@ -1,6 +1,7 @@
-// One play, tick by tick: routes, man coverage, the 5 second rush, QB reads, the throw and catch,
-// then run after catch (or a scramble).
+// One play, tick by tick: routes, coverage (man or zone), the 5 second rush, QB reads, the throw and
+// catch, then run after catch (or a scramble).
 import type { Tendencies } from './archetypes';
+import type { DefenseCall, Job, Zone } from './coverage';
 import { CENTER_SPOT, QB_SPOT } from './formations';
 import { samplePlay, type Play } from './plays';
 import { jitter, physical, qbPhysical, type Physical } from './ratings';
@@ -9,16 +10,6 @@ import type { Offense } from './roster';
 import { routePath } from './routes';
 import { DT, FIELD, RUSH_COUNT, type Player, type Vec } from './types';
 import { add, angleBetween, clamp, clampLen, dist, dot, len, mul, norm, sub } from './vec';
-
-export type RushMode = 'hard' | 'contain';
-
-export interface DefenseCall {
-  coverage: 'man';
-  rusherId: string;
-  rushMode: RushMode;
-  /** Defender id → id of the offensive player they cover. */
-  man: Record<string, string>;
-}
 
 export type Outcome = 'complete' | 'incomplete' | 'interception' | 'sack' | 'scramble';
 
@@ -29,6 +20,8 @@ export interface PlayResult {
   touchdown: boolean;
   targetId?: string;
   throwTime?: number;
+  /** How far downfield the ball was caught (or landed). */
+  airYards?: number;
   /** Yards from the target's catch point to the nearest defender, at the throw. */
   separation?: number;
   /** The rusher got close (inside ~2.5 yds) before the ball was out. */
@@ -88,12 +81,16 @@ interface Runner extends Body {
   heading: Vec;
   delay: number;
   sitting: boolean;
+  /** Where the route ended; improvising stays near it. */
+  routeEnd?: Vec;
   /** Past positions, one per tick, for defenders reacting with a lag. */
   trail: Vec[];
 }
 
 interface Cover extends Body {
+  job: Job;
   man?: Runner;
+  zone?: Zone;
   cushion: number;
   rubbed: boolean;
 }
@@ -102,6 +99,10 @@ const MAX_TIME = 20;
 /** Room (yards) a planned quick throw needs: soft coverage. */
 const QUICK_BAR = 1;
 const YAC_TIME = 8;
+/** How far (yards) a receiver strays from where their route ended while improvising. */
+const IMPROV_RANGE = 4;
+/** Deep defenders go at most this far past their landmark. */
+const DEEP_CAP = 8;
 
 const body = (player: Player, pos: Vec, rng: Rng): Body => {
   const p = jitter(player, rng);
@@ -146,12 +147,15 @@ function runRoute(r: Runner, t: number, defenders: readonly Body[]) {
     return;
   }
   if (r.sitting) {
-    // Route's done: work away from the nearest defender, staying in bounds and past the line.
+    // Route's done: find a hole near where it ended, away from the nearest defender, in bounds and
+    // past the line.
+    const home = (r.routeEnd ??= r.pos);
     const near = defenders.reduce((a, b) => (dist(b.pos, r.pos) < dist(a.pos, r.pos) ? b : a));
     let away = norm(sub(r.pos, near.pos));
     if (Math.abs(r.pos.x) > FIELD.halfWidth - 2) away = add(away, { x: -Math.sign(r.pos.x), y: 0 });
     if (r.pos.y < 2) away = add(away, { x: 0, y: 1 });
-    steer(r, add(r.pos, mul(norm(away), 3)), r.phys.topSpeed * 0.5);
+    const spot = add(home, clampLen(sub(add(r.pos, mul(norm(away), 3)), home), IMPROV_RANGE));
+    steer(r, spot, r.phys.topSpeed * 0.5);
     r.trail.push(r.pos);
     return;
   }
@@ -188,17 +192,12 @@ function inField(p: Vec): Vec {
   return { x: clamp(p.x, -FIELD.halfWidth, FIELD.halfWidth), y: p.y };
 }
 
-/** Man defenders assigned to the rest of the offense: the best cover player on their favorite. */
-export function manCall(defense: Player[], offense: Offense, rusherId: string, rushMode: RushMode, shadowId?: string): DefenseCall {
-  const cover = defense.filter((p) => p.id !== rusherId);
-  const coverScore = (p: Player) => p.ratings.man * 2 + p.ratings.speed + p.ratings.agility;
-  const threat = (p: Player) => p.ratings.speed + p.ratings.agility + p.ratings.hands;
-  const shadow = cover.find((p) => p.id === shadowId) ?? [...cover].sort((a, b) => coverScore(b) - coverScore(a))[0];
-  const restD = cover.filter((p) => p !== shadow).sort((a, b) => coverScore(b) - coverScore(a));
-  const restO = [...offense.receivers, offense.center].filter((p) => p.id !== offense.favoriteId).sort((a, b) => threat(b) - threat(a));
-  const man: Record<string, string> = { [shadow.id]: offense.favoriteId };
-  restD.forEach((d, i) => (man[d.id] = restO[i].id));
-  return { coverage: 'man', rusherId, rushMode, man };
+/** Where a receiver was `lag` seconds ago, and how they were moving then. */
+function seenAt(r: Runner, lag: number): { pos: Vec; vel: Vec } {
+  const trail = r.trail;
+  const i = Math.max(1, trail.length - 1 - Math.round(lag / DT));
+  const pos = trail[Math.min(i, trail.length - 1)];
+  return { pos, vel: mul(sub(pos, trail[i - 1] ?? pos), 1 / DT) };
 }
 
 export function simulatePlay(input: SimInput): PlayRecording {
@@ -231,11 +230,14 @@ export function simulatePlay(input: SimInput): PlayRecording {
   const covers: Cover[] = input.defense
     .filter((p) => p.id !== call.rusherId)
     .map((p) => {
-      const man = runnerById.get(call.man[p.id]);
+      const job = call.jobs[p.id];
+      if (job.kind === 'zone') return { ...body(p, job.zone.align, rng), job, zone: job.zone, cushion: 0, rubbed: false };
+      const man = runnerById.get(job.targetId);
       const s = man?.pos ?? CENTER_SPOT;
       const inside = s.x === 0 ? 0 : -Math.sign(s.x) * 0.7;
-      const start = { x: s.x + inside, y: 4 + Math.min(1.5, Math.max(0, -s.y) * 0.6) };
-      return { ...body(p, start, rng), man, cushion: Math.min(start.y - s.y, 5), rubbed: false };
+      const over = job.shade === 'over' ? 3 : 0;
+      const start = { x: s.x + inside, y: 4 + over + Math.min(1.5, Math.max(0, -s.y) * 0.6) };
+      return { ...body(p, start, rng), job, man, cushion: Math.min(start.y - s.y, 5 + over), rubbed: false };
     });
   const defenders: Body[] = [...covers, rusher];
   const everyone: Body[] = [...runners, ...covers, rusher, qb];
@@ -251,6 +253,79 @@ export function simulatePlay(input: SimInput): PlayRecording {
 
   let t = 0;
   let pressured = false;
+  /** Who the QB is looking at; zone defenders read it. */
+  let qbLook: Runner | undefined = runnerById.get(play.primaryId);
+
+  /** Man: mirror what they saw a lag ago, projected forward: tight on straight lines, beaten at breaks. */
+  const manStep = (c: Cover, m: Runner) => {
+    const seen = seenAt(m, c.phys.manLag);
+    const shade = c.job.kind === 'man' ? c.job.shade : undefined;
+    const cushion = shade === 'over' ? Math.max(3, c.cushion - t * 2) : shade === 'under' ? -0.8 : Math.max(0.8, c.cushion - t * 3);
+    const inside = shade === 'under' ? -Math.sign(seen.pos.x) * 0.8 : 0;
+    const target = add(add(seen.pos, mul(seen.vel, c.phys.manLag)), { x: inside, y: cushion });
+    const ahead = norm(sub(target, c.pos));
+    const blocked = everyone.some(
+      (o) => o !== c && o !== m && o !== qb && dist(o.pos, c.pos) < 1 && dot(sub(o.pos, c.pos), ahead) > 0,
+    );
+    if (blocked) c.rubbed = true;
+    steer(c, target, c.phys.topSpeed * (blocked ? 0.55 : 1));
+  };
+
+  /** Zone: own an area, read receivers through it (with a lag), and lean toward the QB's eyes. */
+  const zoneStep = (c: Cover, z: Zone) => {
+    const L = z.landmark;
+    const seen = runners.filter((r) => t >= r.delay).map((r) => ({ r, ...seenAt(r, c.phys.zoneLag) }));
+    const inBand = (p: Vec) => Math.abs(p.x - L.x) <= z.radius;
+    const deepest = (list: typeof seen) => list.reduce<(typeof seen)[number] | undefined>((a, b) => (!a || b.pos.y > a.pos.y ? b : a), undefined);
+    // Stay deeper than the threat, but no deeper than is worth defending.
+    const onTop = (p: Vec, over: number): Vec => ({ x: L.x + (p.x - L.x) * 0.7, y: clamp(p.y + over, L.y - 4, L.y + DEEP_CAP) });
+    const undercut = (p: Vec, by: number) => add(p, mul(norm(sub(qb.pos, p)), by));
+    const eyes = qbLook ? { x: (qbLook.pos.x - L.x) * c.phys.zoneRead * 0.25, y: 0 } : { x: 0, y: 0 };
+    const home = add(L, eyes);
+
+    let target = home;
+    if (z.kind === 'deep') {
+      // Split everyone threatening the band, staying over the deepest.
+      const band = seen.filter((s) => inBand(s.pos) && s.pos.y >= 7);
+      const th = deepest(band);
+      if (th) {
+        const top = onTop(th.pos, 3);
+        const midX = band.reduce((sum, s) => sum + s.pos.x, 0) / band.length;
+        target = { x: L.x + (midX - L.x) * 0.7, y: top.y };
+      }
+    } else if (z.kind === 'under') {
+      const near = seen
+        .filter((s) => dist(s.pos, L) <= z.radius && s.pos.y <= z.carryTo)
+        .reduce<(typeof seen)[number] | undefined>((a, b) => (!a || dist(b.pos, L) < dist(a.pos, L) ? b : a), undefined);
+      if (near) {
+        const off = sub(undercut(near.pos, 1.5), L);
+        target = add(L, clampLen(off, z.radius + 1));
+      }
+    } else if (z.kind === 'squat') {
+      const band = seen.filter((s) => inBand(s.pos));
+      // Read the release: a vertical stem off the line means bail now (from 5 yds deep there's no
+      // catching up later); quick outside breaks get jumped.
+      const vertical = deepest(band.filter((s) => s.pos.y > z.carryTo || (s.pos.y > s.r.trail[0].y + 1.5 && s.vel.y > 4 && s.r.wp === 0)));
+      const short = band.find((s) => s.pos.y <= z.carryTo && s.r.wp >= 1);
+      if (vertical) target = onTop(vertical.pos, 2);
+      else if (short) target = undercut(short.pos, 0.8);
+    } else {
+      const deepMid = z.free ? undefined : deepest(seen.filter((s) => Math.abs(s.pos.x) <= 5 && s.pos.y >= 10));
+      if (deepMid) target = onTop(deepMid.pos, 2.5);
+      else if (qbLook) {
+        const k = 0.35 + 0.4 * c.phys.zoneRead;
+        const p = add(L, mul(sub(qbLook.pos, L), k));
+        target = { x: p.x, y: Math.max(p.y, z.free ? 5 : 9) };
+      }
+    }
+    // Backpedaling is slower than running forward.
+    steer(c, target, c.phys.topSpeed * (target.y > c.pos.y + 1 ? 0.85 : 1));
+  };
+
+  const coverStep = (c: Cover) => {
+    if (c.man) manStep(c, c.man);
+    else if (c.zone) zoneStep(c, c.zone);
+  };
   const done = (result: Omit<PlayResult, 'pressured' | 'rubs' | 'dodges'>): PlayRecording => ({
     play,
     paths,
@@ -277,8 +352,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
       // Behind the line a scrambling QB can still throw, so coverage stays on their men until he crosses it.
       const holdCoverage = carrier === qb && carrier.pos.y < 0;
       for (const d of defenders) {
-        const man = (d as Cover).man;
-        if (holdCoverage && man) steer(d, add(man.pos, { x: 0, y: 0.8 }));
+        if (holdCoverage && d !== rusher) coverStep(d as Cover);
         else {
           const lead = Math.min(1.2, dist(d.pos, carrier.pos) / d.phys.topSpeed);
           steer(d, add(carrier.pos, mul(carrier.vel, lead)));
@@ -340,22 +414,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
   while (!thrown) {
     for (const r of runners) runRoute(r, t, covers);
 
-    for (const c of covers) {
-      if (!c.man) continue;
-      // Mirror what they saw a lag ago, projected forward: tight on straight lines, beaten at breaks.
-      const trail = c.man.trail;
-      const i = Math.max(1, trail.length - 1 - Math.round(c.phys.manLag / DT));
-      const seen = trail[Math.min(i, trail.length - 1)];
-      const seenVel = mul(sub(seen, trail[i - 1] ?? seen), 1 / DT);
-      const cushion = Math.max(0.8, c.cushion - t * 3);
-      const target = add(add(seen, mul(seenVel, c.phys.manLag)), { x: 0, y: cushion });
-      const ahead = norm(sub(target, c.pos));
-      const blocked = everyone.some(
-        (o) => o !== c && o !== c.man && o !== qb && dist(o.pos, c.pos) < 1 && dot(sub(o.pos, c.pos), ahead) > 0,
-      );
-      if (blocked) c.rubbed = true;
-      steer(c, target, c.phys.topSpeed * (blocked ? 0.55 : 1));
-    }
+    for (const c of covers) coverStep(c);
 
     if (t >= RUSH_COUNT) {
       if (call.rushMode === 'hard') steer(rusher, qb.pos);
@@ -383,6 +442,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
       const reads = looking.map((r) => evaluate(r, locked, bar)).filter((x) => x !== undefined);
       const best = reads.reduce<(typeof reads)[number] | undefined>((a, b) => (!a || b.score > a.score ? b : a), undefined);
 
+      qbLook = locked ? runnerById.get(play.primaryId) : (best?.r ?? qbLook);
       if (best && best.score > 0) thrown = { ...best, forced: false, pressure };
       else if (t >= RUSH_COUNT && pressure > 0.4 && rng() < tend.mobility * 0.4) {
         return runWithBall(qb, 'scramble', {});
@@ -405,17 +465,19 @@ export function simulatePlay(input: SimInput): PlayRecording {
   const sigma = qbp.missPer10 * (range / 10) * (1 + thrown.pressure * (qbp.pressureMiss - 1)) * (thrown.forced ? 1.3 : 1);
   const land = inField(add(thrown.catchPoint, { x: gauss(rng) * sigma, y: gauss(rng) * sigma }));
   const target = thrown.r;
-  const extra = { targetId: target.id, throwTime, separation: thrown.separation };
+  const extra = { targetId: target.id, throwTime, separation: thrown.separation, airYards: land.y };
 
   while (t < throwTime + thrown.travel) {
     for (const r of runners) {
       if (r === target && t >= throwTime + 0.1) steer(r, land);
       else runRoute(r, t, covers);
     }
+    qbLook = target;
     for (const c of covers) {
-      const react = throwTime + c.phys.reaction + (c.man === target ? 0 : 0.3);
-      if (t >= react && (c.man === target || dist(c.pos, land) < 12)) steer(c, land);
-      else if (c.man) steer(c, add(c.man.pos, { x: 0, y: 0.8 }));
+      // Zone defenders watch the QB, so they break on the ball sooner; man defenders are watching their man.
+      const react = throwTime + (c.zone ? c.phys.reaction * (1.2 - 0.6 * c.phys.zoneRead) : c.phys.reaction + (c.man === target ? 0 : 0.3));
+      if (t >= react && (c.man === target || dist(c.pos, land) < (c.zone ? 15 : 12))) steer(c, land);
+      else coverStep(c);
     }
     steer(rusher, land);
     t += DT;
