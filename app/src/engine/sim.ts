@@ -335,7 +335,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
 
     // Safeties (anyone with deep duty) never let someone get behind them: play the zone until a go
     // shows up, then lock on and fall back, staying over the top until he breaks off.
-    const safety = z.kind === 'deep' || z.kind === 'sink' || (z.kind === 'lurk' && !z.free);
+    const safety = z.kind === 'deep' || z.kind === 'sink' || z.kind === 'lurk';
     if (safety) {
       const looksLikeGo = (x: (typeof seen)[number]) => x.vel.y > GO_SPEED && Math.abs(x.vel.x) < 0.5 * x.vel.y && x.pos.y > x.r.trail[0].y + 1.5;
       const area = (p: Vec) => (z.kind === 'lurk' ? Math.abs(p.x - L.x) <= 6 : Math.abs(p.x - L.x) <= z.radius + 1.5);
@@ -385,12 +385,12 @@ export function simulatePlay(input: SimInput): PlayRecording {
       const short = seen.find((s) => inBand(s.pos) && s.pos.y <= z.carryTo && s.r.wp >= 1);
       if (short) target = undercut(short.pos, 0.8);
     } else {
-      const deepMid = z.free ? undefined : deepest(seen.filter((s) => Math.abs(s.pos.x) <= 5 && s.pos.y >= 10));
+      const deepMid = deepest(seen.filter((s) => Math.abs(s.pos.x) <= 5 && s.pos.y >= 10));
       if (deepMid) target = onTop(deepMid.pos, 2.5);
       else if (qbLook) {
         const k = 0.35 + 0.4 * c.phys.zoneRead;
         const p = add(L, mul(sub(qbLook.pos, L), k));
-        target = { x: p.x, y: Math.max(p.y, z.free ? 5 : 9) };
+        target = { x: p.x, y: Math.max(p.y, 9) };
       }
     }
     // Dropping to the landmark is a backpedal; carrying a receiver deep, they turn and run.

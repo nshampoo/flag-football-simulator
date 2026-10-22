@@ -104,8 +104,8 @@ Defense = coverage + rusher behavior + personnel.
    hand verticals to the hook player right behind them (±7, 9 deep). Those hooks are dynamic: they
    play the hook, but run back to a full safety spot if someone passes them or a go comes at them.
    Middle safety is a lurker who drifts toward where the QB is looking and breaks on the throw, but
-   still owns the deep middle by default; a middle hook sits underneath. A free-robber variant (no
-   deep middle responsibility) is a flag flip, testable as a 6th call.
+   still owns the deep middle; a middle hook sits underneath. (A free-robber variant was tried and
+   dropped.)
 
 **Zone mechanics** (`engine/coverage.ts`, `zoneStep` in `engine/sim.ts`): each zone has a landmark,
 pre-snap alignment, radius, and carry depth. Zone defenders read receivers with a lag (Zone rating),
@@ -118,11 +118,9 @@ lean toward the QB's eyes, break on the throw sooner than man defenders, and ign
   sink behind them.
 - **sink** (Cover 3 Aggressive hooks): play a hook right behind the squat; if a receiver gets past
   them or a go comes at them, run back to a full safety spot over the top.
-- **lurk**: drift toward whoever the QB is looking at; carry anything in the deep middle unless free
-  (robber).
+- **lurk**: drift toward whoever the QB is looking at; carry anything in the deep middle.
 
-**Safety rule** (every defender with deep duty: deep zones, sinks, and the lurker, not the free
-robber): never let someone get behind you. Play the zone or lurk until someone looks like a go
+**Safety rule** (every defender with deep duty: deep zones, sinks, and the lurker): never let someone get behind you. Play the zone or lurk until someone looks like a go
 (sprinting upfield over 5 yd/s, mostly vertical, anywhere in your area), then lock on and fall back:
 3 yds over the top of where he'll be in half a second, never stepping forward, as deep as 30 yds. Each
 tick they guard whichever sprinter will be deepest soon, and let go when he breaks off. The cost: a
@@ -181,7 +179,7 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - [x] Monte Carlo summary (`engine/montecarlo.ts`)
 - [x] Monte Carlo CLI (`npm run sim`): ranks rusher × rush mode in man coverage
 - [x] Basic play viewer (animated field, scrubber, run 1,000)
-- [x] Zones: landmarks, triggers, Cover 2, Cover 3, Cover 3 Aggressive, lurker, Robber
+- [x] Zones: landmarks, triggers, Cover 2, Cover 3, Cover 3 Aggressive, lurker (Robber tried and dropped)
 - [x] Man + bracket
 - [x] CLI ranks every defense × rusher × rush mode per archetype; viewer has a defense picker
 - [ ] Personnel search across schemes

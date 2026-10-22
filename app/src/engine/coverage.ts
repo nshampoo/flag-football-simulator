@@ -13,7 +13,7 @@ export interface Zone {
    * squat: sit shallow and drive on short breaks; anything vertical goes to the sink zone behind them.
    * sink: play a hook right behind the squat, but if a receiver gets past them, run back and become a
    *   full safety over the top (at `bailTo`).
-   * lurk: drift toward where the QB is looking and break on the throw; owns the deep middle unless `free`.
+   * lurk: drift toward where the QB is looking and break on the throw; still owns the deep middle.
    */
   kind: 'deep' | 'under' | 'squat' | 'sink' | 'lurk';
   landmark: Vec;
@@ -22,8 +22,6 @@ export interface Zone {
   /** How far from the landmark (across the field, for deep and squat zones) they'll take a receiver. */
   radius: number;
   carryTo: number;
-  /** Lurker with no deep-middle duty (free robber). */
-  free?: boolean;
   /** Sink zones: the safety spot they run back to. */
   bailTo?: Vec;
 }
@@ -32,7 +30,7 @@ export type Job =
   | { kind: 'man'; targetId: string; shade?: 'over' | 'under' }
   | { kind: 'zone'; zone: Zone };
 
-export const COVERAGES = ['man', 'manBracket', 'cover2', 'cover3', 'cover3Aggressive', 'cover3Robber'] as const;
+export const COVERAGES = ['man', 'manBracket', 'cover2', 'cover3', 'cover3Aggressive'] as const;
 export type Coverage = (typeof COVERAGES)[number];
 
 export const COVERAGE_LABELS: Record<Coverage, string> = {
@@ -41,7 +39,6 @@ export const COVERAGE_LABELS: Record<Coverage, string> = {
   cover2: 'Cover 2',
   cover3: 'Cover 3',
   cover3Aggressive: 'Cover 3 Aggressive',
-  cover3Robber: 'Cover 3 Robber',
 };
 
 export const COVERAGE_DESCRIPTIONS: Record<Coverage, string> = {
@@ -51,7 +48,6 @@ export const COVERAGE_DESCRIPTIONS: Record<Coverage, string> = {
   cover3: 'Three deep (two outside thirds and a middle safety); three underneath.',
   cover3Aggressive:
     'Squat thirds jump short routes, hooks behind them run back if passed, and a lurker follows the QB’s eyes but still owns the deep middle.',
-  cover3Robber: 'Cover 3 Aggressive with a free robber: the lurker has no deep job and jumps whatever the QB looks at.',
 };
 
 export const RUSH_DESCRIPTIONS: Record<RushMode, string> = {
@@ -80,13 +76,11 @@ const sink = (s: Side): Zone => ({
   label: 'Hook (sinks)', kind: 'sink', landmark: { x: 7 * s, y: 9 }, align: { x: 6.5 * s, y: 8 }, radius: 5, carryTo: 14, bailTo: { x: 8.5 * s, y: 15 },
 });
 const lurker: Zone = { label: 'Lurker', kind: 'lurk', landmark: { x: 0, y: 12 }, align: { x: 0, y: 10 }, radius: 8, carryTo: Infinity };
-const robber: Zone = { label: 'Robber', kind: 'lurk', landmark: { x: 0, y: 8 }, align: { x: 0, y: 8 }, radius: 8, carryTo: 12, free: true };
 
 export const ZONE_SETS: Record<Exclude<Coverage, 'man' | 'manBracket'>, Zone[]> = {
   cover2: [deepHalf(-1), deepHalf(1), flat(-1), flat(1), hook(-1), hook(1)],
   cover3: [deepThird(-1), deepThird(1), deepMiddle, flat(-1), flat(1), hookMiddle],
   cover3Aggressive: [squat(-1), squat(1), lurker, sink(-1), sink(1), hookMiddle],
-  cover3Robber: [squat(-1), squat(1), robber, sink(-1), sink(1), hookMiddle],
 };
 
 // Who fits each zone. Scarce, important zones are filled first.
