@@ -18,9 +18,24 @@ npm run dev                          # play viewer and best-setup search
 
 Archetypes: `gunslinger`, `dinkAndDunk`, `heroBall`, `scrambler`, `scaredQb`, `balanced`.
 
+## Deploy
+
+```
+cd infra
+npm install
+AWS_PROFILE=personal npm run deploy
+```
+
+`npm run deploy` builds the app, then deploys the `FlagFootballSimSite` stack: a private S3 bucket
+behind CloudFront. Everything, including the best-setup search, runs in the browser.
+
+shampoe.com serves the stack's CloudFront domain (the `CloudFrontDomain` output) at `/flag/app/`
+through the `apps` list in the personal-website repo's `infra/bin/infra.ts`.
+
 | Path | What |
 | --- | --- |
 | `app/src/engine/` | Sim engine (pure TypeScript, shared by the browser and Node) |
 | `app/src/ui/` | Play viewer (Vite + React) |
 | `app/scripts/` | Node scripts run with `tsx` (Monte Carlo batches) |
+| `infra/` | CDK stack (S3 + CloudFront) |
 | `docs/DESIGN.md` | Design and roadmap |
