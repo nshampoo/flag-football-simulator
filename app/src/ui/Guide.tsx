@@ -16,7 +16,7 @@ interface Props {
 /** Reference for everything in the pickers; the current picks are highlighted. */
 export function Guide({ archetype, coverage, rusherId, rushMode }: Props) {
   return (
-    <details className="card guide" open>
+    <details className="card guide">
       <summary>Guide: opponents, defenses, and players</summary>
       <div className="guide-grid">
         <table>

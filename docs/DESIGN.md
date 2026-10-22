@@ -191,7 +191,10 @@ means rush your fastest; scrambler means fast and disciplined in contain.
   jobs, rusher swaps with a cover player, rush mode flips; 2 rounds at 120 plays), then rank on 800
   fresh plays. All setups see the same plays, so comparisons are paired. Reports the routes producing
   the most yards against the winner ("watch for"). ~9 s in Node.
-- [ ] JSON results, heatmap, and call cards
+- [x] Best setup view: pick an opponent, run the search in a web worker (~9 s), get a call card (best
+  defense, rusher, lineup, runner-up and margin, stats, watch-for, every defense ranked) and "Watch it"
+  in the play viewer
+- [ ] Heatmap (defense × archetype) on the page
 - [ ] Story page and app on shampoe.com (personal-website repo)
 
 **v2 and later**

@@ -13,7 +13,7 @@ npm install
 npm test
 npm run sim -- [archetype|all] [plays] [coverage]   # ranks every defense, rusher, and rush mode
 npm run best -- [archetype]                          # searches the best setup, including who plays where
-npm run dev                          # play viewer
+npm run dev                          # play viewer and best-setup search
 ```
 
 Archetypes: `gunslinger`, `dinkAndDunk`, `heroBall`, `scrambler`, `scaredQb`, `balanced`.

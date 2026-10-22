@@ -23,7 +23,9 @@ const result = searchBestSetup(
     ...BROWSER_SEARCH,
     onProgress: (f) => {
       const pct = Math.floor(f * 10) * 10;
-      if (pct !== last) process.stderr.write(`${pct}% `), (last = pct);
+      if (pct === last) return;
+      process.stderr.write(`${pct}% `);
+      last = pct;
     },
   },
 );

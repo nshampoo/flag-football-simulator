@@ -113,3 +113,43 @@ table.stats td:last-child { text-align: right; font-family: var(--mono); }
 .guide tr.current td { background: var(--wr-tag); }
 .guide .scroll { overflow-x: auto; }
 .guide .scroll .hint { margin: 6px 0 0; }
+
+.tabs { display: flex; gap: 4px; margin: 0 0 16px; border-bottom: 1px solid var(--rule); }
+.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 12px; color: var(--muted); margin-bottom: -1px; }
+.tabs button.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+button.link { border: 0; background: none; padding: 0; color: var(--link); cursor: pointer; }
+button.link:hover { text-decoration: underline; }
+button:disabled { opacity: 0.55; cursor: default; }
+.notice { font-size: 13px; background: var(--wr-tag); color: var(--ink-2); border-radius: 6px; padding: 8px 10px; }
+.faint { color: var(--faint); }
+
+.best { display: grid; gap: 20px; }
+.best-controls { display: grid; gap: 10px; max-width: 520px; }
+.best-controls label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.best-controls select { padding: 6px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface-2); }
+.best-controls > button { justify-self: start; }
+.best-controls .hint { margin: 0; }
+.progress { position: relative; height: 26px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--rule); overflow: hidden; }
+.progress div { position: absolute; inset: 0 auto 0 0; background: var(--wr-tag); transition: width 0.2s; }
+.progress span { position: relative; display: block; padding: 3px 10px; font-size: 13px; color: var(--ink-2); }
+
+.callcard { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.callcard .wide { grid-column: 1 / -1; }
+@media (max-width: 760px) { .callcard { grid-template-columns: 1fr; } }
+.callcard h2 { font-size: 26px; margin: 2px 0 4px; }
+.callcard p.muted { margin: 0 0 14px; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+@media (max-width: 480px) { .kpis { grid-template-columns: 1fr; } }
+.kpis div { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.kpis b { display: block; font-size: 20px; font-weight: 600; }
+.kpis span { font-size: 12px; color: var(--muted); line-height: 1.35; display: block; }
+.watch { font-size: 14px; margin: 12px 0; }
+table.stats.lineup td:first-child { font-weight: 500; padding-right: 10px; }
+table.stats.lineup td:last-child { text-align: left; font-family: var(--font); }
+.scroll { overflow-x: auto; }
+table.rank { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.rank th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.rank td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--rule-soft); white-space: nowrap; }
+table.rank .num { text-align: right; font-family: var(--mono); }
+table.rank tr.current td { background: var(--wr-tag); }
