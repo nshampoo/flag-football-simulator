@@ -99,6 +99,18 @@ interface Cover extends Body {
 const MAX_TIME = 20;
 /** Room (yards) a planned quick throw needs: soft coverage. */
 const QUICK_BAR = 1;
+/**
+ * Obviously open, judged by what the QB sees right now: behind the defense (downfield, with everyone
+ * nearby trailing him and nobody over the top), or nobody within OBVIOUS yards. The QB sees it even
+ * while staring down his favorite and throws it, whether or not the defense can close in time.
+ */
+const OBVIOUS = 8;
+const BEHIND_DEPTH = 12;
+const BEHIND_SEP = 4;
+/** Everyone nearby must trail the receiver by at least this much (yards) for him to be "behind" them. */
+const BEHIND_BY = 3;
+/** A defender deeper than the receiver and within this many yards is "over the top". */
+const OVER_TOP = 12;
 const YAC_TIME = 8;
 /** After their route, a receiver this far (yards) from every defender stays put and is a target. */
 const OPEN = 3;
@@ -305,6 +317,8 @@ export function simulatePlay(input: SimInput): PlayRecording {
     const inBand = (p: Vec) => Math.abs(p.x - L.x) <= z.radius;
     const deepest = (list: typeof seen) => list.reduce<(typeof seen)[number] | undefined>((a, b) => (!a || b.pos.y > a.pos.y ? b : a), undefined);
     // Stay deeper than the threat, but no deeper than is worth defending.
+    /** Running straight upfield off the line, before any break. */
+    const verticalStem = (x: (typeof seen)[number]) => x.pos.y > x.r.trail[0].y + 1.5 && x.vel.y > 4 && x.r.wp === 0;
     const onTop = (p: Vec, over: number): Vec => ({ x: L.x + (p.x - L.x) * 0.7, y: clamp(p.y + over, L.y - 4, L.y + DEEP_CAP) });
     const undercut = (p: Vec, by: number) => add(p, mul(norm(sub(qb.pos, p)), by));
     const eyes = qbLook ? { x: (qbLook.pos.x - L.x) * c.phys.zoneRead * 0.25, y: 0 } : { x: 0, y: 0 };
@@ -313,7 +327,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
     let target = home;
     if (z.kind === 'deep') {
       // Split everyone threatening the band, staying over the deepest.
-      const band = seen.filter((s) => inBand(s.pos) && s.pos.y >= 7);
+      const band = seen.filter((s) => inBand(s.pos) && (s.pos.y >= 7 || verticalStem(s)));
       const th = deepest(band);
       if (th) {
         const top = onTop(th.pos, 3);
@@ -332,7 +346,7 @@ export function simulatePlay(input: SimInput): PlayRecording {
       const band = seen.filter((s) => inBand(s.pos));
       // Read the release: a vertical stem off the line means bail now (from 5 yds deep there's no
       // catching up later); quick outside breaks get jumped.
-      const vertical = deepest(band.filter((s) => s.pos.y > z.carryTo || (s.pos.y > s.r.trail[0].y + 1.5 && s.vel.y > 4 && s.r.wp === 0)));
+      const vertical = deepest(band.filter((s) => s.pos.y > z.carryTo || verticalStem(s)));
       const short = band.find((s) => s.pos.y <= z.carryTo && s.r.wp >= 1);
       if (vertical) target = onTop(vertical.pos, 2);
       else if (short) target = undercut(short.pos, 0.8);
@@ -345,8 +359,9 @@ export function simulatePlay(input: SimInput): PlayRecording {
         target = { x: p.x, y: Math.max(p.y, z.free ? 5 : 9) };
       }
     }
-    // Backpedaling is slower than running forward.
-    steer(c, target, c.phys.topSpeed * (target.y > c.pos.y + 1 ? 0.85 : 1));
+    // Dropping to the landmark is a backpedal; carrying a receiver deep, they turn and run.
+    const carrying = target !== home;
+    steer(c, target, c.phys.topSpeed * (!carrying && target.y > c.pos.y + 1 ? 0.85 : 1));
   };
 
   const coverStep = (c: Cover) => {
@@ -419,6 +434,13 @@ export function simulatePlay(input: SimInput): PlayRecording {
   const misread = new Map(runners.map((r) => [r.id, gauss(rng) * qbp.readNoise]));
 
   /** Where the ball would meet the receiver, and how open that looks to this QB right now. */
+  const obvious = (r: Runner) => {
+    const separation = nearestCover(r.pos);
+    if (separation >= OBVIOUS) return true;
+    const behind = covers.every((c) => c.pos.y < r.pos.y - BEHIND_BY || dist(c.pos, r.pos) > OVER_TOP);
+    return r.pos.y >= BEHIND_DEPTH && separation >= BEHIND_SEP && behind;
+  };
+  let quickPhase = false;
   const evaluate = (r: Runner, locked: boolean, bar: number) => {
     const d0 = dist(qb.pos, r.pos);
     const travel = d0 / qbp.throwSpeed + 0.15;
@@ -431,7 +453,9 @@ export function simulatePlay(input: SimInput): PlayRecording {
     if (catchPoint.y > 15) need += 1.2 - 1.8 * tend.deep;
     if (isCenter(r) || catchPoint.y < 5) need -= tend.checkdown;
     if (locked && r.id === play.primaryId) need -= tend.lockOn * 0.8;
-    const score = windowAt(catchPoint, travelTime) + misread.get(r.id)! + gauss(rng) * 0.25 - need;
+    let score = windowAt(catchPoint, travelTime) + misread.get(r.id)! + gauss(rng) * 0.25 - need;
+    // Obviously open gets thrown (and is hard to misread).
+    if (!quickPhase && obvious(r)) score = Math.max(score, 0.5 + separation * 0.1 + misread.get(r.id)! * 0.3);
     return { r, catchPoint, separation, score, travel: travelTime };
   };
 
@@ -465,7 +489,10 @@ export function simulatePlay(input: SimInput): PlayRecording {
       const urgency = t < RUSH_COUNT ? 1 : Math.max(0.2, 1 - 0.3 * (t - RUSH_COUNT));
       const bar = quick ? QUICK_BAR : (5 + 2 * tend.holdTime) * urgency * (1 - 0.6 * pressure);
       const locked = !quick && t < lockUntil;
-      const looking = quick ? [quick] : runners.filter((r) => ready(r) && (!locked || r.id === play.primaryId));
+      quickPhase = !!quick;
+      const looking = quick
+        ? [quick]
+        : runners.filter((r) => ready(r) && (!locked || r.id === play.primaryId || obvious(r)));
       const reads = looking.map((r) => evaluate(r, locked, bar)).filter((x) => x !== undefined);
       const best = reads.reduce<(typeof reads)[number] | undefined>((a, b) => (!a || b.score > a.score ? b : a), undefined);
 

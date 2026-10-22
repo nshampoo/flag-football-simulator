@@ -83,6 +83,13 @@ almost never in between. The sim models two modes:
 - "Open" is judged as the window when the ball arrives: defenders keep moving through their reaction
   time, then close. Misreads are mostly a per-receiver bias for the whole play (Poise), plus a little
   per-look wobble; fresh noise every tick makes someone look open by chance.
+- **Obviously open gets thrown**, judged by what the QB sees right now rather than the arrival window
+  (which knocks ~7 yds off a deep ball's look): a receiver **behind the defense** (12+ yds downfield,
+  4+ yds of separation, everyone nearby trailing him by 3+ yds, nobody over the top within 12), or
+  nobody within 8 yds. The QB sees it even while locked on his favorite, and it's hard to misread.
+  Whether it's caught is still physics. A flat "5 yds from the nearest defender" rule was tried and
+  dropped: in zones that's true of soft spots early in most plays, so everything got thrown before 4 s
+  and interceptions tripled.
 
 ## 7. Defense model
 
@@ -102,7 +109,8 @@ Defense = coverage + rusher behavior + personnel.
 pre-snap alignment, radius, and carry depth. Zone defenders read receivers with a lag (Zone rating),
 lean toward the QB's eyes, break on the throw sooner than man defenders, and ignore rubs. Four kinds:
 - **deep**: stay on top of the deepest threat in their band and split multiple threats; never more
-  than 8 yds past the landmark (chasing a go to 35 yds leaves a hole at 15).
+  than 8 yds past the landmark (chasing a go to 35 yds leaves a hole at 15). They read a vertical stem
+  off the line as a threat right away and turn and run to carry it (only plain drops are a backpedal).
 - **under**: undercut the receiver nearest the landmark; past the carry depth, pass him off.
 - **squat** (Cover 3 Aggressive corners): read the release. A vertical stem off the line means bail
   now (from 5 yds deep there's no catching up later); quick outside breaks get jumped. A double move
@@ -181,6 +189,13 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - Calibration: log 20 to 30 real plays and tune the model until results roughly match.
 
 ## 11. Calibration status
+
+**Update (after receivers find space and QBs see obvious open men):** yards per play 4 to 13 by
+matchup, ~63% completion. Cover 3 is now best against every archetype (4.1 to 6.3 yds/play); Man fell
+to 2nd to 4th. Tension: the 1.2 to 4 s throw band is back up to 38 to 64%, since wide-open deep balls
+naturally come around 3 s. Worth checking against real games which observation should give.
+
+Earlier notes:
 
 Target: the throw timing above, plus rough rec numbers (~60% completion, 5 to 8 yds/play).
 
