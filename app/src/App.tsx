@@ -6,6 +6,7 @@ import { MY_TEAM, OPPONENT } from './engine/roster';
 import { simulatePlay, type PlayResult } from './engine/sim';
 import { DT } from './engine/types';
 import { Field } from './ui/Field';
+import { Guide } from './ui/Guide';
 
 const names = new Map([...MY_TEAM, OPPONENT.qb, OPPONENT.center, ...OPPONENT.receivers].map((p) => [p.id, p.name]));
 const defenseIds = new Set(MY_TEAM.map((p) => p.id));
@@ -83,6 +84,7 @@ export default function App() {
         <h1>Flag Football Defense Simulator</h1>
         <p>7v7, one rusher on a 5 second count. Pick an opponent and a defense and watch it play out.</p>
       </header>
+      <Guide archetype={archetype} coverage={coverage} rusherId={rusherId} rushMode={rushMode} />
       <div className="layout">
         <div className="card">
           <Field rec={rec} frame={frame} time={time} dodges={rec.dodges} call={input.call} defenseIds={defenseIds} rusherId={rusherId} qbId={OPPONENT.qb.id} names={names} />
