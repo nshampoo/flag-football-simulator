@@ -23,6 +23,8 @@ export interface Play {
   assignments: Assignment[];
   primaryId: string;
   secondaryId?: string;
+  /** Planned quick throw: taken right at the release if the coverage is soft, else forgotten. */
+  quickId?: string;
 }
 
 const BACKFIELD_ROUTES: RouteName[] = ['flat', 'wheel', 'shallow'];
@@ -79,5 +81,9 @@ export function samplePlay(rng: Rng, offense: Offense, t: Tendencies): Play {
   const others = assignments.filter((a) => a !== primary);
   const secondary = rng() < 0.6 ? pick(rng, others) : undefined;
 
-  return { formation, strong, assignments, primaryId: primary.playerId, secondaryId: secondary?.playerId };
+  // Quick-game plan: mostly checkdown-minded QBs, to someone on a short route.
+  const short = assignments.filter((a) => ROUTES[a.route].depth === 'short' && a.delay === 0);
+  const quick = short.length && rng() < 0.1 + 0.5 * t.checkdown * (1 - 0.5 * t.deep) ? pick(rng, short) : undefined;
+
+  return { formation, strong, assignments, primaryId: primary.playerId, secondaryId: secondary?.playerId, quickId: quick?.playerId };
 }

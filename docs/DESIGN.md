@@ -68,6 +68,17 @@ Small per-play noise on every rating so repeated reps vary. No fatigue in v1.
 - **Urgency**: the "open enough" bar drops as the clock passes 5 s and pressure arrives.
 - After 5 s: can scramble. Accuracy drops under pressure.
 
+**Throw timing (from real play):** rec QBs throw either within ~0.5 s or somewhere between 4 and 8 s,
+almost never in between. The sim models two modes:
+- **Planned quick throw**: some plays carry a pre-snap plan to a short route (more for checkdown-minded
+  QBs). It's taken at the release only if coverage is soft (≥ 1 yd of window), otherwise forgotten. A
+  defense that closes up takes it away, which is a defense choice once alignment is modeled.
+- **Otherwise, use the count**: before 5 s the QB only throws to someone wide open; after it, urgency
+  and pressure drop the bar fast. Receivers who finish their route work to open space.
+- "Open" is judged as the window when the ball arrives: defenders keep moving through their reaction
+  time, then close. Misreads are mostly a per-receiver bias for the whole play (Poise), plus a little
+  per-look wobble; fresh noise every tick makes someone look open by chance.
+
 ## 7. Defense model
 
 Defense = coverage + rusher behavior + personnel.
@@ -126,9 +137,10 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 
 **v1 (play by play)**
 - [x] Placeholder rosters (swap in real ratings later)
-- [ ] Route library, formations, sampled plays per archetype
-- [ ] Tick sim: routes, man trailing, rubs, 5 s rush (hard/contain), QB reads, scramble, catch/INT, YAC
-- [ ] Monte Carlo runner in Node
+- [x] Route library, formations, sampled plays per archetype
+- [x] Tick sim: routes, man trailing, rubs, 5 s rush (hard/contain), QB reads, scramble, catch/INT, YAC (needs calibration, §11)
+- [x] Monte Carlo summary (`engine/montecarlo.ts`)
+- [ ] Monte Carlo CLI (`npm run sim`)
 - [ ] Basic play viewer (animated field, scrubber, run 1,000)
 - [ ] Zones: landmarks, triggers, Cover 2, Cover 3, Cover 3 Aggressive, lurker
 - [ ] Man + bracket
@@ -138,14 +150,29 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 
 **v2 and later**
 - Drive simulation layer: stop rate and points allowed per drive, situational call sheets (3rd and
-  long, short yardage, red zone). Needs league down rules.
+  long, short yardage, red zone). Needs league down rules. Situations change what's available, e.g. on
+  short yardage the defense closes up and the planned quick throw usually isn't there.
 - Adaptation: offense leans on what works, defense mixes calls.
 - In-game play logging that suggests which archetype the opponent is.
 - Full interactive viewer: pick archetype, defense, and play; QB's current read; separation at the throw.
 - Tap-to-draw play designer (possibly iOS) exporting route JSON.
 - Calibration: log 20 to 30 real plays and tune the model until results roughly match.
 
-## 11. Open questions
+## 11. Calibration status
+
+Target: the throw timing above, plus rough rec numbers (~60% completion, 5 to 8 yds/play).
+
+Current (1,000 plays per archetype, man coverage, fastest player rushing hard):
+- Completion ~56 to 62%: OK.
+- Throw timing: quick throws 5 to 27% of plays, 4 to 8 s band 24 to 65%, but still 25 to 53% in the
+  1.2 to 4 s gap. Too many.
+- Yards per play 0.7 to 3.6: too low. Big plays (15+) only 3 to 8%.
+- Scrambles lose ~3 yds on average and happen too often for mobile QBs (44% of plays for Scrambler).
+- Backfield releases (flat, wheel) are ~6 yds open against man: plausible, worth checking on film.
+
+Next: watch plays in the viewer and compare against real games before more tuning.
+
+## 12. Open questions
 
 - Real roster ratings
 - League down rules and any no-run zones (needed for v2 drives)

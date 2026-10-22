@@ -65,12 +65,12 @@ export function qbPhysical(p: Player): QbPhysical {
   const arm = p.arm ?? 5;
   const poise = p.poise ?? 5;
   return {
-    release: scale(poise, 0.9, 0.5),
+    release: scale(poise, 0.6, 0.3),
     lockOn: scale(poise, 2.0, 0.6),
     throwSpeed: scale(arm, 15, 24),
     maxRange: scale(arm, 25, 45),
     missPer10: scale(arm, 1.1, 0.35),
-    readNoise: scale(poise, 1.4, 0.4),
+    readNoise: scale(poise, 1.0, 0.3),
     pressureMiss: scale(poise, 2.2, 1.3),
   };
 }
