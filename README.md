@@ -12,6 +12,7 @@ cd app
 npm install
 npm test
 npm run sim -- [archetype|all] [plays] [coverage]   # ranks every defense, rusher, and rush mode
+npm run best -- [archetype]                          # searches the best setup, including who plays where
 npm run dev                          # play viewer
 ```
 

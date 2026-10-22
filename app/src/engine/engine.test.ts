@@ -7,6 +7,7 @@ import { physical, scale } from './ratings';
 import { mulberry32 } from './rng';
 import { MY_TEAM, OPPONENT } from './roster';
 import { ROUTE_NAMES, routePath } from './routes';
+import { searchBestSetup } from './search';
 import { simulatePlay } from './sim';
 import { FIELD, RUSH_COUNT } from './types';
 
@@ -151,5 +152,20 @@ describe('coverages', () => {
       return n;
     };
     expect(share('manBracket')).toBeLessThan(share('man'));
+  });
+});
+
+describe('search', () => {
+  it('ranks a tuned setup for every defense, with every player placed', () => {
+    const r = searchBestSetup(
+      { offense: OPPONENT, tendencies: ARCHETYPES.balanced, defense: MY_TEAM },
+      { screenPlays: 20, tunePlays: 20, rounds: 1, finalPlays: 60 },
+    );
+    expect(r.ranked.map((s) => s.call.coverage).sort()).toEqual([...COVERAGES].sort());
+    for (let i = 1; i < r.ranked.length; i++) expect(r.ranked[i].summary.yardsPerPlay).toBeGreaterThanOrEqual(r.ranked[i - 1].summary.yardsPerPlay);
+    for (const s of r.ranked) {
+      expect([s.call.rusherId, ...Object.keys(s.call.jobs)].sort()).toEqual(MY_TEAM.map((p) => p.id).sort());
+    }
+    expect(r.watchFor.length).toBeGreaterThan(0);
   });
 });

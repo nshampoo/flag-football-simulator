@@ -186,7 +186,11 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - [x] Zones: landmarks, triggers, Cover 2, Cover 3, Cover 3 Aggressive, lurker (Robber tried and dropped)
 - [x] Man + bracket
 - [x] CLI ranks every defense × rusher × rush mode per archetype; viewer has a defense picker
-- [ ] Personnel search across schemes
+- [x] Personnel search (`engine/search.ts`, `npm run best`): screen every defense × rusher × rush mode
+  with the default fit (100 plays each), tune each defense's best by single changes (two players swap
+  jobs, rusher swaps with a cover player, rush mode flips; 2 rounds at 120 plays), then rank on 800
+  fresh plays. All setups see the same plays, so comparisons are paired. Reports the routes producing
+  the most yards against the winner ("watch for"). ~9 s in Node.
 - [ ] JSON results, heatmap, and call cards
 - [ ] Story page and app on shampoe.com (personal-website repo)
 
