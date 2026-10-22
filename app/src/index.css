@@ -99,3 +99,4 @@ table.stats { width: 100%; border-collapse: collapse; font-size: 13px; margin-to
 table.stats td { padding: 3px 0; border-bottom: 1px solid var(--rule-soft); }
 table.stats td:last-child { text-align: right; font-family: var(--mono); }
 .muted { color: var(--muted); font-size: 13px; }
+.hint { color: var(--faint); font-size: 12px; line-height: 1.4; }

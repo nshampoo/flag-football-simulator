@@ -11,6 +11,8 @@ export interface Player {
   id: string;
   name: string;
   ratings: Ratings;
+  /** One-line description of their game. */
+  note?: string;
   /** QB ratings (1 to 10). Anyone without them throws like a 5. */
   arm?: number;
   poise?: number;

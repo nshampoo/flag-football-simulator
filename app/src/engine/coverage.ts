@@ -44,6 +44,21 @@ export const COVERAGE_LABELS: Record<Coverage, string> = {
   cover3Robber: 'Cover 3 Robber',
 };
 
+export const COVERAGE_DESCRIPTIONS: Record<Coverage, string> = {
+  man: 'Everyone has a man and no help. Their favorite gets your best cover player.',
+  manBracket: 'Two on their favorite (one under, one over the top); their weakest receiver is left open.',
+  cover2: 'Two deep safeties split the field; four play underneath zones.',
+  cover3: 'Three deep (two outside thirds and a middle safety); three underneath.',
+  cover3Aggressive:
+    'Squat thirds jump short routes, hooks behind them run back if passed, and a lurker follows the QB’s eyes but still owns the deep middle.',
+  cover3Robber: 'Cover 3 Aggressive with a free robber: the lurker has no deep job and jumps whatever the QB looks at.',
+};
+
+export const RUSH_DESCRIPTIONS: Record<RushMode, string> = {
+  hard: 'Goes straight at the QB on the 5 second count.',
+  contain: 'Stays about 3 yards off and cuts off the scramble lane; less pressure.',
+};
+
 export interface DefenseCall {
   coverage: Coverage;
   rusherId: string;

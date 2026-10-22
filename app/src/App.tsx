@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ARCHETYPE_LABELS, ARCHETYPE_NAMES, ARCHETYPES, type ArchetypeName } from './engine/archetypes';
+import { ARCHETYPE_DESCRIPTIONS, ARCHETYPE_LABELS, ARCHETYPE_NAMES, ARCHETYPES, type ArchetypeName } from './engine/archetypes';
 import { runMatchup, type Summary } from './engine/montecarlo';
-import { COVERAGE_LABELS, COVERAGES, defenseCall, type Coverage, type RushMode } from './engine/coverage';
+import { COVERAGE_DESCRIPTIONS, COVERAGE_LABELS, COVERAGES, defenseCall, RUSH_DESCRIPTIONS, type Coverage, type RushMode } from './engine/coverage';
 import { MY_TEAM, OPPONENT } from './engine/roster';
 import { simulatePlay, type PlayResult } from './engine/sim';
 import { DT } from './engine/types';
@@ -10,6 +10,12 @@ import { Field } from './ui/Field';
 const names = new Map([...MY_TEAM, OPPONENT.qb, OPPONENT.center, ...OPPONENT.receivers].map((p) => [p.id, p.name]));
 const defenseIds = new Set(MY_TEAM.map((p) => p.id));
 const SPEEDS = [0.25, 0.5, 1];
+
+function ratingsLine(id: string): string {
+  const p = MY_TEAM.find((m) => m.id === id)!;
+  const r = p.ratings;
+  return `Speed ${r.speed} · Agility ${r.agility} · Hands ${r.hands} · Height ${r.catchHeight} · Man ${r.man} · Zone ${r.zone}`;
+}
 
 function describe(r: PlayResult): string {
   const who = r.targetId ? names.get(r.targetId) : undefined;
@@ -111,18 +117,25 @@ export default function App() {
             <select value={archetype} onChange={(e) => setArchetype(e.target.value as ArchetypeName)}>
               {ARCHETYPE_NAMES.map((a) => <option key={a} value={a}>{ARCHETYPE_LABELS[a]}</option>)}
             </select>
+            <span className="hint">{ARCHETYPE_DESCRIPTIONS[archetype]}</span>
           </label>
           <label>
             Defense
             <select value={coverage} onChange={(e) => setCoverage(e.target.value as Coverage)}>
               {COVERAGES.map((c) => <option key={c} value={c}>{COVERAGE_LABELS[c]}</option>)}
             </select>
+            <span className="hint">{COVERAGE_DESCRIPTIONS[coverage]}</span>
           </label>
           <label>
             Rusher
             <select value={rusherId} onChange={(e) => setRusherId(e.target.value)}>
               {MY_TEAM.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
+            <span className="hint">
+              {MY_TEAM.find((p) => p.id === rusherId)!.note}
+              <br />
+              {ratingsLine(rusherId)}
+            </span>
           </label>
           <label>
             Rush
@@ -130,6 +143,7 @@ export default function App() {
               <option value="hard">Hard at 5s</option>
               <option value="contain">Contain</option>
             </select>
+            <span className="hint">{RUSH_DESCRIPTIONS[rushMode]}</span>
           </label>
           <label>
             Speed
