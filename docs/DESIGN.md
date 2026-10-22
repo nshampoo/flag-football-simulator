@@ -100,10 +100,12 @@ Defense = coverage + rusher behavior + personnel.
 2. **Man + bracket**: two defenders on their favorite, leaving their weakest eligible (often the center) uncovered.
 3. **Cover 2**: 2 deep halves, 4 underneath zones.
 4. **Cover 3**: outside thirds at depth, middle safety deep.
-5. **Cover 3 Aggressive**: outside safeties start shallow (~5 yds) to jump early outs, then bail and
-   carry anything vertical. Middle safety is a lurker who drifts toward where the QB is looking and
-   breaks on the throw, but still owns the deep middle by default. A free-robber variant (no deep
-   middle responsibility) is a flag flip, testable as a 6th call.
+5. **Cover 3 Aggressive**: squat thirds a touch inside (±7.5 yds, 5 deep) jump short breaks and
+   hand verticals to the hook player right behind them (±7, 9 deep). Those hooks are dynamic: they
+   play the hook, but run back to a full safety spot if someone passes them or a go comes at them.
+   Middle safety is a lurker who drifts toward where the QB is looking and breaks on the throw, but
+   still owns the deep middle by default; a middle hook sits underneath. A free-robber variant (no
+   deep middle responsibility) is a flag flip, testable as a 6th call.
 
 **Zone mechanics** (`engine/coverage.ts`, `zoneStep` in `engine/sim.ts`): each zone has a landmark,
 pre-snap alignment, radius, and carry depth. Zone defenders read receivers with a lag (Zone rating),
@@ -112,11 +114,19 @@ lean toward the QB's eyes, break on the throw sooner than man defenders, and ign
   than 8 yds past the landmark (chasing a go to 35 yds leaves a hole at 15). They read a vertical stem
   off the line as a threat right away and turn and run to carry it (only plain drops are a backpedal).
 - **under**: undercut the receiver nearest the landmark; past the carry depth, pass him off.
-- **squat** (Cover 3 Aggressive corners): read the release. A vertical stem off the line means bail
-  now (from 5 yds deep there's no catching up later); quick outside breaks get jumped. A double move
-  that breaks outside first (out and up) beats it, by design.
+- **squat** (Cover 3 Aggressive corners): jump quick breaks in their band; leave verticals to the
+  sink behind them.
+- **sink** (Cover 3 Aggressive hooks): play a hook right behind the squat; if a receiver gets past
+  them or a go comes at them, run back to a full safety spot over the top.
 - **lurk**: drift toward whoever the QB is looking at; carry anything in the deep middle unless free
   (robber).
+
+**Safety rule** (every defender with deep duty: deep zones, sinks, and the lurker, not the free
+robber): never let someone get behind you. Play the zone or lurk until someone looks like a go
+(sprinting upfield over 5 yd/s, mostly vertical, anywhere in your area), then lock on and fall back:
+3 yds over the top of where he'll be in half a second, never stepping forward, as deep as 30 yds. Each
+tick they guard whichever sprinter will be deepest soon, and let go when he breaks off. The cost: a
+safety who runs off with a go leaves the 13 to 18 yd hole behind the underneath zones.
 
 Personnel is a fit heuristic for now: deep spots to fast, tall zone players, the lurker to the best
 zone player with hands, squats to speed and agility, and underneath zones to whoever's left.
@@ -189,6 +199,12 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - Calibration: log 20 to 30 real plays and tune the model until results roughly match.
 
 ## 11. Calibration status
+
+**Update (safety rule + Cover 3 Aggressive rebuild):** Cover 3 Aggressive is now the best zone (4.2 to
+7.3 yds/play) and best overall vs Dink and Dunk, Hero Ball, and Balanced. Go balls rarely beat any
+zone. Cover 2 and Cover 3 got worse (Cover 3 vs Gunslinger 6.3 → 9.9): receivers who find space
+settle in the hole behind the underneath zones (which pass off at 12) and in front of safeties
+carrying gos.
 
 **Update (after receivers find space and QBs see obvious open men):** yards per play 4 to 13 by
 matchup, ~63% completion. Cover 3 is now best against every archetype (4.1 to 6.3 yds/play); Man fell

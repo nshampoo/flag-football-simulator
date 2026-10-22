@@ -10,10 +10,12 @@ export interface Zone {
   /**
    * deep: stay on top of the deepest threat in their band.
    * under: undercut the nearest threat near the landmark; past `carryTo` it's the deep zone's problem.
-   * squat: sit shallow and drive on short breaks; anything vertical past `carryTo`, bail and carry it.
+   * squat: sit shallow and drive on short breaks; anything vertical goes to the sink zone behind them.
+   * sink: play a hook right behind the squat, but if a receiver gets past them, run back and become a
+   *   full safety over the top (at `bailTo`).
    * lurk: drift toward where the QB is looking and break on the throw; owns the deep middle unless `free`.
    */
-  kind: 'deep' | 'under' | 'squat' | 'lurk';
+  kind: 'deep' | 'under' | 'squat' | 'sink' | 'lurk';
   landmark: Vec;
   /** Pre-snap alignment. */
   align: Vec;
@@ -22,6 +24,8 @@ export interface Zone {
   carryTo: number;
   /** Lurker with no deep-middle duty (free robber). */
   free?: boolean;
+  /** Sink zones: the safety spot they run back to. */
+  bailTo?: Vec;
 }
 
 export type Job =
@@ -56,25 +60,29 @@ const deepMiddle: Zone = { label: 'Deep middle', kind: 'deep', landmark: { x: 0,
 const flat = (s: Side): Zone => ({ label: 'Flat', kind: 'under', landmark: { x: 10 * s, y: 5 }, align: { x: 9 * s, y: 4 }, radius: 7, carryTo: 12 });
 const hook = (s: Side): Zone => ({ label: 'Hook', kind: 'under', landmark: { x: 4 * s, y: 7 }, align: { x: 3.5 * s, y: 5 }, radius: 5.5, carryTo: 12 });
 const hookMiddle: Zone = { label: 'Middle hook', kind: 'under', landmark: { x: 0, y: 7 }, align: { x: 0, y: 5 }, radius: 6, carryTo: 12 };
-const squat = (s: Side): Zone => ({ label: 'Squat third', kind: 'squat', landmark: { x: 9 * s, y: 5 }, align: { x: 9 * s, y: 5 }, radius: 5, carryTo: 8 });
+const squat = (s: Side): Zone => ({ label: 'Squat third', kind: 'squat', landmark: { x: 7.5 * s, y: 5 }, align: { x: 7.5 * s, y: 5 }, radius: 5, carryTo: 8 });
+const sink = (s: Side): Zone => ({
+  label: 'Hook (sinks)', kind: 'sink', landmark: { x: 7 * s, y: 9 }, align: { x: 6.5 * s, y: 8 }, radius: 5, carryTo: 14, bailTo: { x: 8.5 * s, y: 15 },
+});
 const lurker: Zone = { label: 'Lurker', kind: 'lurk', landmark: { x: 0, y: 12 }, align: { x: 0, y: 10 }, radius: 8, carryTo: Infinity };
 const robber: Zone = { label: 'Robber', kind: 'lurk', landmark: { x: 0, y: 8 }, align: { x: 0, y: 8 }, radius: 8, carryTo: 12, free: true };
 
 export const ZONE_SETS: Record<Exclude<Coverage, 'man' | 'manBracket'>, Zone[]> = {
   cover2: [deepHalf(-1), deepHalf(1), flat(-1), flat(1), hook(-1), hook(1)],
   cover3: [deepThird(-1), deepThird(1), deepMiddle, flat(-1), flat(1), hookMiddle],
-  cover3Aggressive: [squat(-1), squat(1), lurker, hook(-1), hook(1), hookMiddle],
-  cover3Robber: [squat(-1), squat(1), robber, hook(-1), hook(1), hookMiddle],
+  cover3Aggressive: [squat(-1), squat(1), lurker, sink(-1), sink(1), hookMiddle],
+  cover3Robber: [squat(-1), squat(1), robber, sink(-1), sink(1), hookMiddle],
 };
 
 // Who fits each zone. Scarce, important zones are filled first.
 const ZONE_FIT: Record<Zone['kind'], (r: Player['ratings']) => number> = {
   deep: (r) => r.zone * 2 + r.speed * 1.5 + r.catchHeight,
   lurk: (r) => r.zone * 2 + r.hands + r.agility,
+  sink: (r) => r.zone * 1.5 + r.speed * 1.5 + r.catchHeight * 0.5,
   squat: (r) => r.speed * 1.5 + r.agility + r.zone,
   under: (r) => r.zone + r.agility + r.speed * 0.5,
 };
-const FILL_ORDER: Zone['kind'][] = ['deep', 'lurk', 'squat', 'under'];
+const FILL_ORDER: Zone['kind'][] = ['deep', 'lurk', 'sink', 'squat', 'under'];
 
 const manScore = (p: Player) => p.ratings.man * 2 + p.ratings.speed + p.ratings.agility;
 const threat = (p: Player) => p.ratings.speed + p.ratings.agility + p.ratings.hands;

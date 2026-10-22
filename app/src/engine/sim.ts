@@ -94,6 +94,8 @@ interface Cover extends Body {
   zone?: Zone;
   cushion: number;
   rubbed: boolean;
+  /** A safety carrying a go: who they're staying over the top of. */
+  carry?: Runner;
 }
 
 const MAX_TIME = 20;
@@ -120,6 +122,13 @@ const IMPROV_RANGE = 8;
 const IMPROV_COMMIT = 1;
 /** Deep defenders go at most this far past their landmark. */
 const DEEP_CAP = 8;
+/** "Looks like a go": sprinting upfield faster than this (yd/s), mostly vertically. */
+const GO_SPEED = 5;
+/** Safeties pick up a go anywhere in their area once it's within this many yards of their depth (they read the stem). */
+const GO_RANGE = 12;
+/** Yards a safety stays over the top of a go, and the deepest they'll carry it. */
+const GO_CUSHION = 3;
+const GO_MAX_DEPTH = 30;
 
 const body = (player: Player, pos: Vec, rng: Rng): Body => {
   const p = jitter(player, rng);
@@ -319,10 +328,34 @@ export function simulatePlay(input: SimInput): PlayRecording {
     // Stay deeper than the threat, but no deeper than is worth defending.
     /** Running straight upfield off the line, before any break. */
     const verticalStem = (x: (typeof seen)[number]) => x.pos.y > x.r.trail[0].y + 1.5 && x.vel.y > 4 && x.r.wp === 0;
-    const onTop = (p: Vec, over: number): Vec => ({ x: L.x + (p.x - L.x) * 0.7, y: clamp(p.y + over, L.y - 4, L.y + DEEP_CAP) });
+    const onTop = (p: Vec, over: number, ref = L): Vec => ({ x: ref.x + (p.x - ref.x) * 0.7, y: clamp(p.y + over, ref.y - 2, ref.y + DEEP_CAP) });
     const undercut = (p: Vec, by: number) => add(p, mul(norm(sub(qb.pos, p)), by));
     const eyes = qbLook ? { x: (qbLook.pos.x - L.x) * c.phys.zoneRead * 0.25, y: 0 } : { x: 0, y: 0 };
     const home = add(L, eyes);
+
+    // Safeties (anyone with deep duty) never let someone get behind them: play the zone until a go
+    // shows up, then lock on and fall back, staying over the top until he breaks off.
+    const safety = z.kind === 'deep' || z.kind === 'sink' || (z.kind === 'lurk' && !z.free);
+    if (safety) {
+      const looksLikeGo = (x: (typeof seen)[number]) => x.vel.y > GO_SPEED && Math.abs(x.vel.x) < 0.5 * x.vel.y && x.pos.y > x.r.trail[0].y + 1.5;
+      const area = (p: Vec) => (z.kind === 'lurk' ? Math.abs(p.x - L.x) <= 6 : Math.abs(p.x - L.x) <= z.radius + 1.5);
+      // Whoever is about to get behind them: the sprinter who'll be deepest in about a second. Whoever
+      // they're already carrying stays a candidate (even drifting out of the area) until he breaks off.
+      const stillGoing = (x: (typeof seen)[number]) => x.pos.y > c.pos.y - GO_CUSHION && (x.vel.y > 1 || x.pos.y > c.pos.y - 1);
+      const candidates = seen.filter(
+        (x) => (x.r === c.carry && stillGoing(x)) || (area(x.pos) && looksLikeGo(x) && x.pos.y > c.pos.y - GO_RANGE),
+      );
+      const soon = (x: (typeof seen)[number]) => x.pos.y + Math.max(0, x.vel.y) * 0.8;
+      const go = candidates.reduce<(typeof seen)[number] | undefined>((a, b) => (!a || soon(b) > soon(a) ? b : a), undefined);
+      c.carry = go?.r;
+      if (go) {
+        // Aim where he'll be in half a second, so they get moving before he's on them.
+        const ahead = go.pos.y + Math.max(0, go.vel.y) * 0.5;
+        const over = { x: go.pos.x + (L.x - go.pos.x) * 0.2, y: Math.min(GO_MAX_DEPTH, Math.max(ahead + GO_CUSHION, c.pos.y)) };
+        steer(c, over);
+        return;
+      }
+    }
 
     let target = home;
     if (z.kind === 'deep') {
@@ -334,22 +367,23 @@ export function simulatePlay(input: SimInput): PlayRecording {
         const midX = band.reduce((sum, s) => sum + s.pos.x, 0) / band.length;
         target = { x: L.x + (midX - L.x) * 0.7, y: top.y };
       }
-    } else if (z.kind === 'under') {
+    } else if (z.kind === 'under' || z.kind === 'sink') {
+      // Sink: a vertical is coming at them or already past them, so run back and play safety over him.
+      const sinking = (s: (typeof seen)[number]) =>
+        (s.pos.y > c.pos.y + 0.5 && (s.vel.y > 2 || s.pos.y > z.carryTo)) || (verticalStem(s) && s.pos.y > c.pos.y - 5);
+      const passed = z.kind === 'sink' ? deepest(seen.filter((s) => inBand(s.pos) && sinking(s))) : undefined;
       const near = seen
         .filter((s) => dist(s.pos, L) <= z.radius && s.pos.y <= z.carryTo)
         .reduce<(typeof seen)[number] | undefined>((a, b) => (!a || dist(b.pos, L) < dist(a.pos, L) ? b : a), undefined);
-      if (near) {
+      if (passed) target = onTop(passed.pos, 2, z.bailTo ?? L);
+      else if (near) {
         const off = sub(undercut(near.pos, 1.5), L);
         target = add(L, clampLen(off, z.radius + 1));
       }
     } else if (z.kind === 'squat') {
-      const band = seen.filter((s) => inBand(s.pos));
-      // Read the release: a vertical stem off the line means bail now (from 5 yds deep there's no
-      // catching up later); quick outside breaks get jumped.
-      const vertical = deepest(band.filter((s) => s.pos.y > z.carryTo || verticalStem(s)));
-      const short = band.find((s) => s.pos.y <= z.carryTo && s.r.wp >= 1);
-      if (vertical) target = onTop(vertical.pos, 2);
-      else if (short) target = undercut(short.pos, 0.8);
+      // Jump short breaks; anything vertical is the sink zone's, so stay home underneath.
+      const short = seen.find((s) => inBand(s.pos) && s.pos.y <= z.carryTo && s.r.wp >= 1);
+      if (short) target = undercut(short.pos, 0.8);
     } else {
       const deepMid = z.free ? undefined : deepest(seen.filter((s) => Math.abs(s.pos.x) <= 5 && s.pos.y >= 10));
       if (deepMid) target = onTop(deepMid.pos, 2.5);

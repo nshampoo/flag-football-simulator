@@ -125,10 +125,20 @@ describe('coverages', () => {
     }
   });
 
-  it('squat corners give up more big plays to a gunslinger than a regular Cover 3', () => {
-    const vs = (coverage: (typeof COVERAGES)[number]) =>
-      runMatchup({ ...base, tendencies: ARCHETYPES.gunslinger, call: defenseCall(coverage, MY_TEAM, OPPONENT, 'burner', 'hard') }, 600);
-    expect(vs('cover3Aggressive').bigPlayPct).toBeGreaterThan(vs('cover3').bigPlayPct);
+  it('safeties keep go routes in front of them', () => {
+    // Big completions on go routes, per 1,000 plays against a gunslinger.
+    const goBombs = (coverage: (typeof COVERAGES)[number]) => {
+      const call = defenseCall(coverage, MY_TEAM, OPPONENT, 'burner', 'hard');
+      let n = 0;
+      for (let seed = 1; seed <= 1000; seed++) {
+        const rec = simulatePlay({ ...base, tendencies: ARCHETYPES.gunslinger, call, seed });
+        const route = rec.play.assignments.find((a) => a.playerId === rec.result.targetId)?.route;
+        if (route === 'go' && rec.result.outcome === 'complete' && rec.result.yards >= 15) n++;
+      }
+      return n;
+    };
+    const man = goBombs('man');
+    for (const coverage of ['cover2', 'cover3', 'cover3Aggressive'] as const) expect(goBombs(coverage), coverage).toBeLessThan(man);
   });
 
   it('the bracket takes targets away from their favorite', () => {
