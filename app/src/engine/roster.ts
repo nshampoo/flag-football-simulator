@@ -19,18 +19,28 @@ export const PLAYER_TYPES = {
 export type PlayerType = keyof typeof PLAYER_TYPES;
 export const PLAYER_TYPE_IDS = Object.keys(PLAYER_TYPES) as PlayerType[];
 
-/** A preset type, or `custom` with the player's own ratings. */
-export type SlotType = PlayerType | 'custom';
-export const CUSTOM = { label: 'Custom', note: 'Your own ratings.' } as const;
-
-/** One roster spot: a name and a type (custom spots carry their own ratings). */
+/**
+ * One roster spot: a name and a type. With `ratings` the player is a custom version of that type
+ * ("Custom Burner"): the type is where the ratings started.
+ */
 export interface RosterSlot {
   name: string;
-  type: SlotType;
+  type: PlayerType;
   ratings?: Ratings;
 }
 
-export const typeInfo = (type: SlotType) => (type === 'custom' ? CUSTOM : PLAYER_TYPES[type]);
+/** How a spot's type reads: "Burner", or "Custom Burner" with its own ratings. */
+export function typeInfo(s: RosterSlot): { label: string; note: string } {
+  const t = PLAYER_TYPES[s.type];
+  return s.ratings ? { label: `Custom ${t.label}`, note: `Custom ratings, starting from a ${t.label}.` } : t;
+}
+
+/** Saved or linked spots from before custom became a checkbox had type 'custom'; they become a custom Steady. */
+export function upgradeSlot(s: { name: string; type: string; ratings?: Partial<Ratings> }): RosterSlot | undefined {
+  if (s.type === 'custom') return { name: s.name, type: 'steady', ratings: cleanRatings(s.ratings) };
+  if (!(s.type in PLAYER_TYPES)) return undefined;
+  return s.ratings ? { name: s.name, type: s.type as PlayerType, ratings: cleanRatings(s.ratings) } : { name: s.name, type: s.type as PlayerType };
+}
 
 /** Whole numbers from 1 to 10; anything missing is a 5. */
 export function cleanRatings(r: Partial<Ratings> | undefined): Ratings {
@@ -44,7 +54,7 @@ export function cleanRatings(r: Partial<Ratings> | undefined): Ratings {
 
 /** The ratings a spot plays with. */
 export function slotRatings(s: RosterSlot): Ratings {
-  return s.type === 'custom' ? cleanRatings(s.ratings) : { ...PLAYER_TYPES[s.type].ratings };
+  return s.ratings ? cleanRatings(s.ratings) : { ...PLAYER_TYPES[s.type].ratings };
 }
 
 export const ROSTER_SIZE = 7;
@@ -52,13 +62,13 @@ export const ROSTER_SIZE = 7;
 /** One of each type, named after the type. */
 export const DEFAULT_SLOTS: RosterSlot[] = PLAYER_TYPE_IDS.map((type) => ({ name: PLAYER_TYPES[type].label, type }));
 
-// Share links: the roster as compact JSON ([name, type] or [name, 'custom', '9,7,5,5,6,4'] per spot),
-// base64url-encoded so it survives in a URL.
-type Packed = [string, string] | [string, 'custom', string];
+// Share links: the roster as compact JSON ([name, type], plus '9,7,5,5,6,4' for a custom player, per
+// spot), base64url-encoded so it survives in a URL.
+type Packed = [string, string] | [string, string, string];
 
 export function encodeSlots(slots: RosterSlot[]): string {
   const packed: Packed[] = slots.map((s) =>
-    s.type === 'custom' ? [s.name, 'custom', RATINGS.map((k) => cleanRatings(s.ratings)[k]).join(',')] : [s.name, s.type],
+    s.ratings ? [s.name, s.type, RATINGS.map((k) => cleanRatings(s.ratings)[k]).join(',')] : [s.name, s.type],
   );
   const bytes = new TextEncoder().encode(JSON.stringify(packed));
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -71,14 +81,12 @@ export function decodeSlots(code: string): RosterSlot[] | undefined {
     const packed = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)))) as unknown;
     if (!Array.isArray(packed) || packed.length !== ROSTER_SIZE) return undefined;
     return packed.map((p): RosterSlot => {
-      if (!Array.isArray(p) || typeof p[0] !== 'string') throw new Error('bad spot');
-      const name = p[0].slice(0, 20);
-      if (p[1] === 'custom') {
-        const values = String(p[2]).split(',').map(Number);
-        return { name, type: 'custom', ratings: cleanRatings(Object.fromEntries(RATINGS.map((k, i) => [k, values[i]]))) };
-      }
-      if (!(p[1] in PLAYER_TYPES)) throw new Error('bad type');
-      return { name, type: p[1] as PlayerType };
+      if (!Array.isArray(p) || typeof p[0] !== 'string' || typeof p[1] !== 'string') throw new Error('bad spot');
+      const values = p[2] === undefined ? undefined : String(p[2]).split(',').map(Number);
+      const ratings = values && Object.fromEntries(RATINGS.map((k, i) => [k, values[i]]));
+      const slot = upgradeSlot({ name: p[0].slice(0, 20), type: p[1], ratings });
+      if (!slot) throw new Error('bad type');
+      return slot;
     });
   } catch {
     return undefined;
@@ -88,7 +96,7 @@ export function decodeSlots(code: string): RosterSlot[] | undefined {
 /** Players for a roster; ids are p1 to p7 by spot, so the same type can appear more than once. */
 export function buildRoster(slots: RosterSlot[]): Player[] {
   return slots.map((s, i) => {
-    const t = typeInfo(s.type);
+    const t = typeInfo(s);
     return { id: `p${i + 1}`, name: s.name.trim() || `${t.label} ${i + 1}`, note: t.note, type: t.label, ratings: slotRatings(s) };
   });
 }

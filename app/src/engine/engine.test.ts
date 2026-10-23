@@ -173,20 +173,25 @@ describe('search', () => {
 
 describe('roster', () => {
   it('builds custom players from their own ratings, kept to whole numbers from 1 to 10', () => {
-    const [p] = buildRoster([{ name: 'Nick', type: 'custom', ratings: { speed: 12, agility: 0, hands: 7.6, catchHeight: 4, man: 6, zone: NaN } }]);
-    expect(p.type).toBe('Custom');
+    const [p] = buildRoster([{ name: 'Nick', type: 'burner', ratings: { speed: 12, agility: 0, hands: 7.6, catchHeight: 4, man: 6, zone: NaN } }]);
+    expect(p.type).toBe('Custom Burner');
     expect(p.ratings).toEqual({ speed: 10, agility: 1, hands: 8, catchHeight: 4, man: 6, zone: 5 });
   });
 
   it('round-trips a roster through a share link, including custom ratings and any name', () => {
     const slots: RosterSlot[] = [
-      { name: 'Nick', type: 'custom', ratings: { speed: 9, agility: 10, hands: 5, catchHeight: 5, man: 3, zone: 1 } },
+      { name: 'Nick', type: 'burner', ratings: { speed: 9, agility: 10, hands: 5, catchHeight: 5, man: 3, zone: 1 } },
       { name: 'José ⚡', type: 'burner' },
       ...DEFAULT_SLOTS.slice(2),
     ];
     const code = encodeSlots(slots);
     expect(code).toMatch(/^[A-Za-z0-9_-]+$/);
     expect(decodeSlots(code)).toEqual(slots);
+  });
+
+  it('still opens links from before custom was a checkbox, as a custom Steady', () => {
+    const old = btoa(JSON.stringify([['Nick', 'custom', '9,10,5,5,3,1'], ...DEFAULT_SLOTS.slice(1).map((s) => [s.name, s.type])]));
+    expect(decodeSlots(old)?.[0]).toEqual({ name: 'Nick', type: 'steady', ratings: { speed: 9, agility: 10, hands: 5, catchHeight: 5, man: 3, zone: 1 } });
   });
 
   it('rejects broken share links', () => {

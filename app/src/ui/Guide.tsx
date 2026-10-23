@@ -1,6 +1,6 @@
 import { ARCHETYPE_DESCRIPTIONS, ARCHETYPE_LABELS, ARCHETYPE_NAMES, type ArchetypeName } from '../engine/archetypes';
 import { COVERAGE_DESCRIPTIONS, COVERAGE_LABELS, COVERAGES, RUSH_DESCRIPTIONS, type Coverage, type RushMode } from '../engine/coverage';
-import { CUSTOM, PLAYER_TYPE_IDS, PLAYER_TYPES } from '../engine/roster';
+import { PLAYER_TYPE_IDS, PLAYER_TYPES } from '../engine/roster';
 import { RATINGS } from '../engine/types';
 
 const RATING_LABELS = { speed: 'Spd', agility: 'Agi', hands: 'Hnd', catchHeight: 'Ht', man: 'Man', zone: 'Zone' } as const;
@@ -55,21 +55,16 @@ export function Guide({ archetype, coverage, rusherType, rushMode }: Props) {
               {PLAYER_TYPE_IDS.map((id) => {
                 const t = PLAYER_TYPES[id];
                 return (
-                  <tr key={id} className={t.label === rusherType ? 'current' : undefined}>
+                  <tr key={id} className={rusherType === t.label || rusherType === `Custom ${t.label}` ? 'current' : undefined}>
                     <td>{t.label}</td>
                     <td>{t.note}</td>
                     {RATINGS.map((k) => <td key={k} className="num">{t.ratings[k]}</td>)}
                   </tr>
                 );
               })}
-              <tr className={rusherType === CUSTOM.label ? 'current' : undefined}>
-                <td>{CUSTOM.label}</td>
-                <td>Set a player's own ratings in the Roster panel.</td>
-                {RATINGS.map((k) => <td key={k} className="num faint">–</td>)}
-              </tr>
             </tbody>
           </table>
-          <p className="hint">Ratings are 1 to 10. Build your team from these types in the Roster panel. Highlighted: the rusher's type.</p>
+          <p className="hint">Ratings are 1 to 10. Build your team from these types in the Roster panel, and tick Custom there to tweak one. Highlighted: the rusher's type.</p>
         </div>
         <table>
           <thead><tr><th>Rush</th><th>What the rusher does</th></tr></thead>

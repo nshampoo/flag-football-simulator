@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { buildRoster, cleanRatings, decodeSlots, DEFAULT_SLOTS, encodeSlots, PLAYER_TYPES, ROSTER_SIZE, type RosterSlot } from './engine/roster';
+import { buildRoster, decodeSlots, DEFAULT_SLOTS, encodeSlots, ROSTER_SIZE, upgradeSlot, type RosterSlot } from './engine/roster';
 import { BestSetup } from './ui/BestSetup';
 import { Guide } from './ui/Guide';
 import type { Picks } from './ui/labels';
@@ -12,10 +12,10 @@ const ROSTER_KEY = 'ffs-roster';
 /** The saved roster, if it's still valid; storage can be missing or blocked. */
 function loadSlots(): RosterSlot[] {
   try {
-    const saved = JSON.parse(localStorage.getItem(ROSTER_KEY) ?? 'null') as RosterSlot[] | null;
-    const valid = (s: RosterSlot) => typeof s?.name === 'string' && (s.type in PLAYER_TYPES || s.type === 'custom');
-    if (Array.isArray(saved) && saved.length === ROSTER_SIZE && saved.every(valid)) {
-      return saved.map((s) => (s.type === 'custom' ? { ...s, ratings: cleanRatings(s.ratings) } : { name: s.name, type: s.type }));
+    const saved = JSON.parse(localStorage.getItem(ROSTER_KEY) ?? 'null') as unknown;
+    if (Array.isArray(saved) && saved.length === ROSTER_SIZE) {
+      const slots = saved.map((s) => (typeof s?.name === 'string' && typeof s?.type === 'string' ? upgradeSlot(s) : undefined));
+      if (slots.every((s) => s !== undefined)) return slots;
     }
   } catch {
     // fall through to the default
