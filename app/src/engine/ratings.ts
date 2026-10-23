@@ -33,10 +33,13 @@ export interface Physical {
   zoneLag: number;
 }
 
+/** Rec players aren't track athletes: everyone runs and accelerates at this share of the rating scale. */
+const PACE = 0.9;
+
 export function physical(r: Ratings): Physical {
   return {
-    topSpeed: scale(r.speed, 6.5, 8.5),
-    accel: scale(r.speed, 5, 8),
+    topSpeed: scale(r.speed, 6.5, 8.5) * PACE,
+    accel: scale(r.speed, 5, 8) * PACE,
     cutAccel: scale(r.agility, 7, 15),
     cutLoss: scale(r.agility, 0.85, 0.45),
     reaction: scale(r.agility, 0.5, 0.2),

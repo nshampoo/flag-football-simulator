@@ -28,6 +28,9 @@ export interface Play {
 }
 
 const BACKFIELD_ROUTES: RouteName[] = ['flat', 'wheel', 'shallow'];
+/** Receivers get going 0.2 to 0.4 s after the snap. */
+const SNAP_DELAY = 0.2;
+const SNAP_SPREAD = 0.2;
 const CENTER_ROUTES: RouteName[] = ['stick', 'stick', 'shallow', 'flat'];
 
 function routeMix(rng: Rng, t: Tendencies): RouteName[] {
@@ -56,7 +59,7 @@ export function samplePlay(rng: Rng, offense: Offense, t: Tendencies, only?: For
       route: inBackfield && !BACKFIELD_ROUTES.includes(routes[i]) ? pick(rng, BACKFIELD_ROUTES) : routes[i],
       start,
       side: start.x < 0 ? -1 : 1,
-      delay: 0,
+      delay: SNAP_DELAY + rng() * SNAP_SPREAD,
     };
   });
   assignments.push({
@@ -84,7 +87,7 @@ export function samplePlay(rng: Rng, offense: Offense, t: Tendencies, only?: For
   const secondary = rng() < 0.6 ? pick(rng, others) : undefined;
 
   // Quick-game plan: mostly checkdown-minded QBs, to someone on a short route.
-  const short = assignments.filter((a) => ROUTES[a.route].depth === 'short' && a.delay === 0);
+  const short = assignments.filter((a) => ROUTES[a.route].depth === 'short' && a.playerId !== offense.center.id);
   const quick = short.length && rng() < 0.1 + 0.5 * t.checkdown * (1 - 0.5 * t.deep) ? pick(rng, short) : undefined;
 
   return { formation, strong, assignments, primaryId: primary.playerId, secondaryId: secondary?.playerId, quickId: quick?.playerId };

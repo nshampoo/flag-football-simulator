@@ -37,7 +37,7 @@ export const ARCHETYPE_DESCRIPTIONS: Record<ArchetypeName, string> = {
   gunslinger: 'Throws deep early and often; loves go routes and jump balls to their tallest receiver.',
   dinkAndDunk: 'Quick release, short routes, and checkdowns to the center.',
   heroBall: 'Locks onto their star and forces it to him.',
-  scrambler: 'Holds it past the 5 second count and runs if nothing is open.',
+  scrambler: 'Holds it past the count of five and runs if nothing is open.',
   scaredQb: "Holds the ball, won't run, and throws late under pressure.",
   balanced: 'League-average baseline: a bit of everything.',
 };

@@ -92,7 +92,7 @@ export default function App() {
     <div className="app">
       <header>
         <h1>Flag Football Defense Simulator</h1>
-        <p>7v7, one rusher on a 5 second count. Watch single plays, or find the best setup for a matchup.</p>
+        <p>7v7, one rusher on a count of five. Watch single plays, or find the best setup for a matchup.</p>
       </header>
       <Guide archetype={picks.archetype} coverage={picks.coverage} rusherType={rusherType} rushMode={picks.rushMode} />
       <Roster

@@ -4,7 +4,7 @@ import { PLAYER_TYPE_IDS, PLAYER_TYPES } from '../engine/roster';
 import { RATINGS } from '../engine/types';
 
 const RATING_LABELS = { speed: 'Spd', agility: 'Agi', hands: 'Hnd', catchHeight: 'Ht', man: 'Man', zone: 'Zone' } as const;
-const RUSH_LABELS: Record<RushMode, string> = { hard: 'Hard at 5s', contain: 'Contain' };
+const RUSH_LABELS: Record<RushMode, string> = { hard: 'Hard on 5', contain: 'Contain' };
 
 interface Props {
   archetype: ArchetypeName;

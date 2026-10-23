@@ -10,7 +10,7 @@ export function nameMap(roster: Player[]): Map<string, string> {
   return new Map([...offenseNames, ...roster.map((p) => [p.id, p.name] as const)]);
 }
 
-export const RUSH_LABELS: Record<RushMode, string> = { hard: 'Hard at 5s', contain: 'Contain' };
+export const RUSH_LABELS: Record<RushMode, string> = { hard: 'Hard on 5', contain: 'Contain' };
 
 /** What the viewer is showing. `call` is a searched setup (who plays where) that stays until the picks change. */
 export interface Picks {

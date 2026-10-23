@@ -15,8 +15,9 @@ Results and an interactive play viewer will be hosted on shampoe.com.
   extra defender; the field gets dense if the offense doesn't stretch it vertically.
 - One rusher, who must line up on or within 2 yards of the line of scrimmage. The rusher cannot drop
   into coverage before the ball is thrown.
-- Rusher has a 5 second count. After 5 seconds the rusher can rush and the QB can run. Before that the
-  QB is a stationary passer.
+- Rusher has a count of five. After it the rusher can rush and the QB can run. Before that the QB is
+  a stationary passer. Nobody times it: counted out loud, five comes in about **4 real seconds**
+  (`RUSH_COUNT` in `engine/types.ts`), and that's what the sim uses.
 - No pick plays allowed, but rubs happen naturally (especially from bunch and stack alignments).
 - Result: coverage is effectively 6 on 6 (6 eligibles vs 6 non-rushing defenders).
 
@@ -38,7 +39,7 @@ Every player has six 1 to 10 ratings, mapped to physical values in `engine/ratin
 
 | Rating | Drives |
 |---|---|
-| Speed | top speed (6.5 to 8.5 yd/s) and acceleration |
+| Speed | top speed (5.9 to 7.7 yd/s: the 6.5 to 8.5 scale at a 90% rec pace) and acceleration |
 | Agility | change of direction (speed kept through a cut, scaled by cut angle), reaction time (0.2 to 0.5 s), route sharpness, flag pulling, and (with some Speed) **elusiveness**: the chance a flag pull on you misses (5 to 50%) |
 | Hands | catch probability, contested catches |
 | Catch Height | height × jump; max catch point (~8 ft at 1 to ~10.5 ft at 10). Used on contested/high balls, both receivers and defenders |
@@ -49,6 +50,10 @@ QBs add **Arm** (accuracy and range) and **Poise** (release time, read speed, ac
 and how long they lock on to their favorite). Scramble ability comes from Speed.
 
 Small per-play noise on every rating so repeated reps vary. No fatigue in v1.
+
+**Pace and the snap** (from friends' feedback that receivers moved too fast): everyone runs and
+accelerates at 90% of the rating scale (`PACE`), receivers leave the line 0.2 to 0.4 s after the snap,
+and zone defenders hold for their reaction time before dropping.
 
 **Flag pulls** (sacks, scrambles, and runs after the catch all use the same rule): a defender within a
 yard tries each tick with chance flag pull × (1 − carrier's elusiveness). A miss costs the defender
@@ -219,6 +224,11 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - Calibration: log 20 to 30 real plays and tune the model until results roughly match.
 
 ## 11. Calibration status
+
+**Update (90% pace, snap delay, count of five in ~4 s):** yards per play down ~0.5 to 1.5 across the
+board (Cover 2: 3.7 to 6.2 by opponent), and more throws come after the count (4 to 8 s band up 4 to 7
+points for hero ball, scrambler, scared QB). Cover 2 is still best or close against most teams;
+Cover 3 Aggressive is still best vs Dink and Dunk (2.9); Man is now level with Cover 2 vs Gunslinger.
 
 **Update (underneath fill/sink + deeper Cover 2 hooks):** Cover 2 is now best vs Gunslinger,
 Scrambler, and Scared QB (5.6 to 6.1 yds/play) and gives up the fewest big plays of anything (4 to 9%),

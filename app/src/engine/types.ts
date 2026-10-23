@@ -31,5 +31,8 @@ export const FIELD: Field = { halfWidth: 13.5, goalLine: 40 };
 
 /** Seconds per sim tick. */
 export const DT = 0.1;
-/** The rusher's count; after it the rusher can go and the QB can run. */
-export const RUSH_COUNT = 5;
+/**
+ * When the rusher's count of five is up (seconds): after it the rusher can go and the QB can run.
+ * Nobody times it; counted out loud, five comes in about 4 seconds.
+ */
+export const RUSH_COUNT = 4;

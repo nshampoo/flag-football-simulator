@@ -328,6 +328,11 @@ export function simulatePlay(input: SimInput): PlayRecording {
 
   /** Zone: own an area, read receivers through it (with a lag), and lean toward the QB's eyes. */
   const zoneStep = (c: Cover, z: Zone) => {
+    // A beat to react to the snap before dropping.
+    if (t < c.phys.reaction) {
+      steer(c, c.pos);
+      return;
+    }
     const L = z.landmark;
     const seen = runners.filter((r) => t >= r.delay).map((r) => ({ r, ...seenAt(r, c.phys.zoneLag) }));
     const inBand = (p: Vec) => Math.abs(p.x - L.x) <= z.radius;

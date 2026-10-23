@@ -52,7 +52,7 @@ export const COVERAGE_DESCRIPTIONS: Record<Coverage, string> = {
 };
 
 export const RUSH_DESCRIPTIONS: Record<RushMode, string> = {
-  hard: 'Goes straight at the QB on the 5 second count.',
+  hard: 'Goes straight at the QB once the count of five is up.',
   contain: 'Stays about 3 yards off and cuts off the scramble lane; less pressure.',
 };
 

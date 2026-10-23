@@ -4,11 +4,16 @@ import { COVERAGE_DESCRIPTIONS, COVERAGE_LABELS, COVERAGES, defenseCall, RUSH_DE
 import { runMatchup, type Summary } from '../engine/montecarlo';
 import { OPPONENT } from '../engine/roster';
 import { simulatePlay, type PlayResult } from '../engine/sim';
-import { DT, type Player } from '../engine/types';
+import { DT, RUSH_COUNT, type Player } from '../engine/types';
 import { Field } from './Field';
 import { nameMap, pct, ratingsLine, RUSH_LABELS, withType, type Picks } from './labels';
 
 const SPEEDS = [0.25, 0.5, 1];
+
+/** The rusher's count as you'd hear it: "count 3", then "rush on" once five is up. */
+function countAt(t: number): string {
+  return t >= RUSH_COUNT ? 'rush on' : `count ${Math.floor(t / (RUSH_COUNT / 5)) + 1}`;
+}
 
 function describe(r: PlayResult, names: Map<string, string>): string {
   const who = r.targetId ? names.get(r.targetId) : undefined;
@@ -100,7 +105,7 @@ export function Viewer({ roster, picks, setPicks }: Props) {
             {playing ? 'Pause' : time >= end ? 'Replay' : 'Play'}
           </button>
           <input type="range" min={0} max={end} step={DT} value={time} onChange={(e) => (setPlaying(false), setTime(Number(e.target.value)))} />
-          <span>{time.toFixed(1)}s</span>
+          <span>{time.toFixed(1)}s · {countAt(time)}</span>
         </div>
         <div className="result">
           <b>{describe(r, names)}</b>
