@@ -195,7 +195,8 @@ means rush your fastest; scrambler means fast and disciplined in contain.
   defense, rusher, lineup, runner-up and margin, stats, watch-for, every defense ranked) and "Watch it"
   in the play viewer
 - [x] Roster panel (collapsible, under the guide, above the Play viewer / Best setup tabs): build the team from preset player types (Burner, Glue, Tall, Ballhawk, Steady,
-  Quick, Vet), repeats allowed, named; saved in the browser. Real ratings aren't needed.
+  Quick, Vet), repeats allowed, named, or Custom with the player's own 1 to 10 ratings (starting from
+  their previous type's); saved in the browser (localStorage). Real ratings aren't needed.
 - [x] Lineup diagram on the call card: everyone's pre-snap spot vs a trips formation, with zone spots,
   drops, man assignments, and roles
 - [x] Live at shampoe.com/flag/ (story page) and /flag/open/ (app), via the `FlagFootballSimSite` stack

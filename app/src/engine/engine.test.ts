@@ -5,7 +5,7 @@ import { runMatchup } from './montecarlo';
 import { samplePlay } from './plays';
 import { physical, scale } from './ratings';
 import { mulberry32 } from './rng';
-import { MY_TEAM, OPPONENT } from './roster';
+import { buildRoster, MY_TEAM, OPPONENT } from './roster';
 import { ROUTE_NAMES, routePath } from './routes';
 import { searchBestSetup } from './search';
 import { simulatePlay } from './sim';
@@ -168,5 +168,19 @@ describe('search', () => {
       expect([s.call.rusherId, ...Object.keys(s.call.jobs)].sort()).toEqual(MY_TEAM.map((p) => p.id).sort());
     }
     expect(r.watchFor.length).toBeGreaterThan(0);
+  });
+});
+
+describe('roster', () => {
+  it('builds custom players from their own ratings, kept to whole numbers from 1 to 10', () => {
+    const [p] = buildRoster([{ name: 'Nick', type: 'custom', ratings: { speed: 12, agility: 0, hands: 7.6, catchHeight: 4, man: 6, zone: NaN } }]);
+    expect(p.type).toBe('Custom');
+    expect(p.ratings).toEqual({ speed: 10, agility: 1, hands: 8, catchHeight: 4, man: 6, zone: 5 });
+  });
+
+  it('gives the same type the same ratings, with ids by spot', () => {
+    const team = buildRoster([{ name: 'A', type: 'burner' }, { name: 'B', type: 'burner' }]);
+    expect(team.map((p) => p.id)).toEqual(['p1', 'p2']);
+    expect(team[0].ratings).toEqual(team[1].ratings);
   });
 });

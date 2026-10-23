@@ -158,6 +158,7 @@ table.rank tr.current td { background: var(--wr-tag); }
 .roster[open] { display: grid; gap: 12px; }
 .roster p.muted { margin: 0; }
 .roster input, .roster select { padding: 5px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface-2); width: 100%; min-width: 110px; }
+.roster input.rating { width: 3.4em; min-width: 0; padding: 4px 2px 4px 6px; text-align: right; font-family: var(--mono); }
 .roster td { vertical-align: top; }
 .roster .hint { white-space: normal; margin-top: 3px; max-width: 220px; }
 .roster > button { justify-self: start; }

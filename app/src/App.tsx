@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { buildRoster, DEFAULT_SLOTS, PLAYER_TYPES, ROSTER_SIZE, type RosterSlot } from './engine/roster';
+import { buildRoster, cleanRatings, DEFAULT_SLOTS, PLAYER_TYPES, ROSTER_SIZE, type RosterSlot } from './engine/roster';
 import { BestSetup } from './ui/BestSetup';
 import { Guide } from './ui/Guide';
 import type { Picks } from './ui/labels';
@@ -13,7 +13,10 @@ const ROSTER_KEY = 'ffs-roster';
 function loadSlots(): RosterSlot[] {
   try {
     const saved = JSON.parse(localStorage.getItem(ROSTER_KEY) ?? 'null') as RosterSlot[] | null;
-    if (Array.isArray(saved) && saved.length === ROSTER_SIZE && saved.every((s) => typeof s?.name === 'string' && s.type in PLAYER_TYPES)) return saved;
+    const valid = (s: RosterSlot) => typeof s?.name === 'string' && (s.type in PLAYER_TYPES || s.type === 'custom');
+    if (Array.isArray(saved) && saved.length === ROSTER_SIZE && saved.every(valid)) {
+      return saved.map((s) => (s.type === 'custom' ? { ...s, ratings: cleanRatings(s.ratings) } : { name: s.name, type: s.type }));
+    }
   } catch {
     // fall through to the default
   }

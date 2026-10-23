@@ -1,5 +1,5 @@
 // Placeholder rosters until real ratings are in.
-import type { Player, Ratings } from './types';
+import { RATINGS, type Player, type Ratings } from './types';
 
 const r = (speed: number, agility: number, hands: number, catchHeight: number, man: number, zone: number): Ratings => ({
   speed, agility, hands, catchHeight, man, zone,
@@ -19,10 +19,32 @@ export const PLAYER_TYPES = {
 export type PlayerType = keyof typeof PLAYER_TYPES;
 export const PLAYER_TYPE_IDS = Object.keys(PLAYER_TYPES) as PlayerType[];
 
-/** One roster spot: a name and a preset type. */
+/** A preset type, or `custom` with the player's own ratings. */
+export type SlotType = PlayerType | 'custom';
+export const CUSTOM = { label: 'Custom', note: 'Your own ratings.' } as const;
+
+/** One roster spot: a name and a type (custom spots carry their own ratings). */
 export interface RosterSlot {
   name: string;
-  type: PlayerType;
+  type: SlotType;
+  ratings?: Ratings;
+}
+
+export const typeInfo = (type: SlotType) => (type === 'custom' ? CUSTOM : PLAYER_TYPES[type]);
+
+/** Whole numbers from 1 to 10; anything missing is a 5. */
+export function cleanRatings(r: Partial<Ratings> | undefined): Ratings {
+  const out = {} as Ratings;
+  for (const k of RATINGS) {
+    const v = Math.round(Number(r?.[k]));
+    out[k] = Number.isFinite(v) ? Math.min(10, Math.max(1, v)) : 5;
+  }
+  return out;
+}
+
+/** The ratings a spot plays with. */
+export function slotRatings(s: RosterSlot): Ratings {
+  return s.type === 'custom' ? cleanRatings(s.ratings) : { ...PLAYER_TYPES[s.type].ratings };
 }
 
 export const ROSTER_SIZE = 7;
@@ -33,8 +55,8 @@ export const DEFAULT_SLOTS: RosterSlot[] = PLAYER_TYPE_IDS.map((type) => ({ name
 /** Players for a roster; ids are p1 to p7 by spot, so the same type can appear more than once. */
 export function buildRoster(slots: RosterSlot[]): Player[] {
   return slots.map((s, i) => {
-    const t = PLAYER_TYPES[s.type];
-    return { id: `p${i + 1}`, name: s.name.trim() || `${t.label} ${i + 1}`, note: t.note, type: t.label, ratings: { ...t.ratings } };
+    const t = typeInfo(s.type);
+    return { id: `p${i + 1}`, name: s.name.trim() || `${t.label} ${i + 1}`, note: t.note, type: t.label, ratings: slotRatings(s) };
   });
 }
 
