@@ -33,6 +33,6 @@ export const FIELD: Field = { halfWidth: 13.5, goalLine: 40 };
 export const DT = 0.1;
 /**
  * When the rusher's count of five is up (seconds): after it the rusher can go and the QB can run.
- * Nobody times it; counted out loud, five comes in about 4 seconds.
+ * Nobody times it; on our game video the count comes in 2 to 3 seconds.
  */
-export const RUSH_COUNT = 4;
+export const RUSH_COUNT = 2.5;

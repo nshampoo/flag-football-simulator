@@ -16,8 +16,8 @@ Results and an interactive play viewer will be hosted on shampoe.com.
 - One rusher, who must line up on or within 2 yards of the line of scrimmage. The rusher cannot drop
   into coverage before the ball is thrown.
 - Rusher has a count of five. After it the rusher can rush and the QB can run. Before that the QB is
-  a stationary passer. Nobody times it: counted out loud, five comes in about **4 real seconds**
-  (`RUSH_COUNT` in `engine/types.ts`), and that's what the sim uses.
+  a stationary passer. Nobody times it: on our game video the count comes in 2 to 3 real seconds,
+  so the sim uses **2.5 s** (`RUSH_COUNT` in `engine/types.ts`).
 - No pick plays allowed, but rubs happen naturally (especially from bunch and stack alignments).
 - Result: coverage is effectively 6 on 6 (6 eligibles vs 6 non-rushing defenders).
 
@@ -224,6 +224,12 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - Calibration: log 20 to 30 real plays and tune the model until results roughly match.
 
 ## 11. Calibration status
+
+**Update (count of five at 2.5 s, from game video):** median throw ~2 s; 27 to 47% of throws come after
+the count (8% for Dink and Dunk, which mostly throws quick). Cover 3 and Cover 3 Aggressive are now best
+against most opponents (2.7 to 4.6 yds/play), Cover 2 close behind; Man falls to last with the rush
+arriving earlier. Sacks are rare (~0.1% vs Cover 2): QBs get it out under pressure. Open question: the
+earlier "throws within 0.5 s or at 4 to 8 s" observation may have been counted, not timed, seconds.
 
 **Update (90% pace, snap delay, count of five in ~4 s):** yards per play down ~0.5 to 1.5 across the
 board (Cover 2: 3.7 to 6.2 by opponent), and more throws come after the count (4 to 8 s band up 4 to 7
