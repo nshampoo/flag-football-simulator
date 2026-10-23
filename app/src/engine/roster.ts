@@ -52,6 +52,39 @@ export const ROSTER_SIZE = 7;
 /** One of each type, named after the type. */
 export const DEFAULT_SLOTS: RosterSlot[] = PLAYER_TYPE_IDS.map((type) => ({ name: PLAYER_TYPES[type].label, type }));
 
+// Share links: the roster as compact JSON ([name, type] or [name, 'custom', '9,7,5,5,6,4'] per spot),
+// base64url-encoded so it survives in a URL.
+type Packed = [string, string] | [string, 'custom', string];
+
+export function encodeSlots(slots: RosterSlot[]): string {
+  const packed: Packed[] = slots.map((s) =>
+    s.type === 'custom' ? [s.name, 'custom', RATINGS.map((k) => cleanRatings(s.ratings)[k]).join(',')] : [s.name, s.type],
+  );
+  const bytes = new TextEncoder().encode(JSON.stringify(packed));
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** The roster in a share link, or undefined if it isn't a valid one. */
+export function decodeSlots(code: string): RosterSlot[] | undefined {
+  try {
+    const bin = atob(code.replace(/-/g, '+').replace(/_/g, '/'));
+    const packed = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)))) as unknown;
+    if (!Array.isArray(packed) || packed.length !== ROSTER_SIZE) return undefined;
+    return packed.map((p): RosterSlot => {
+      if (!Array.isArray(p) || typeof p[0] !== 'string') throw new Error('bad spot');
+      const name = p[0].slice(0, 20);
+      if (p[1] === 'custom') {
+        const values = String(p[2]).split(',').map(Number);
+        return { name, type: 'custom', ratings: cleanRatings(Object.fromEntries(RATINGS.map((k, i) => [k, values[i]]))) };
+      }
+      if (!(p[1] in PLAYER_TYPES)) throw new Error('bad type');
+      return { name, type: p[1] as PlayerType };
+    });
+  } catch {
+    return undefined;
+  }
+}
+
 /** Players for a roster; ids are p1 to p7 by spot, so the same type can appear more than once. */
 export function buildRoster(slots: RosterSlot[]): Player[] {
   return slots.map((s, i) => {

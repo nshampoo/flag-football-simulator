@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { DEFAULT_SLOTS, PLAYER_TYPE_IDS, PLAYER_TYPES, slotRatings, typeInfo, type RosterSlot, type SlotType } from '../engine/roster';
 import { RATINGS, type Rating } from '../engine/types';
 import { withType } from './labels';
@@ -7,11 +8,31 @@ const RATING_LABELS = { speed: 'Spd', agility: 'Agi', hands: 'Hnd', catchHeight:
 interface Props {
   slots: RosterSlot[];
   setSlots: (slots: RosterSlot[]) => void;
+  /** The page was opened with this team in a share link. */
+  fromLink: boolean;
+  shareLink: () => string;
 }
 
+type Share = { state: 'idle' } | { state: 'copied' } | { state: 'manual'; link: string };
+
 /** Build the team from preset player types: a name and a type for each of the 7 spots. Collapsed, it lists the team. */
-export function Roster({ slots, setSlots }: Props) {
-  const update = (i: number, change: Partial<RosterSlot>) => setSlots(slots.map((s, j) => (j === i ? { ...s, ...change } : s)));
+export function Roster({ slots, setSlots, fromLink, shareLink }: Props) {
+  const [share, setShare] = useState<Share>({ state: 'idle' });
+  const copy = async () => {
+    const link = shareLink();
+    try {
+      await navigator.clipboard.writeText(link);
+      setShare({ state: 'copied' });
+    } catch {
+      // No clipboard access (old browser, or blocked in a frame): show it to copy by hand.
+      setShare({ state: 'manual', link });
+    }
+  };
+  const edit = (next: RosterSlot[]) => {
+    setShare({ state: 'idle' });
+    setSlots(next);
+  };
+  const update = (i: number, change: Partial<RosterSlot>) => edit(slots.map((s, j) => (j === i ? { ...s, ...change } : s)));
   const team = slots.map((s, i) => withType(s.name.trim() || `${typeInfo(s.type).label} ${i + 1}`, typeInfo(s.type).label)).join(', ');
   // Switching to Custom starts from the ratings the player had.
   const setType = (i: number, type: SlotType) =>
@@ -23,10 +44,11 @@ export function Roster({ slots, setSlots }: Props) {
   };
 
   return (
-    <details className="card roster">
+    <details className="card roster" open={fromLink || undefined}>
       <summary>
         Roster: <span className="team">{team}</span>
       </summary>
+      {fromLink && <div className="notice">Loaded a team from a shared link. It's saved in this browser now, so edit away.</div>}
       <p className="muted">
         Pick a type for each of your 7 players (the same type can appear more than once) and give them a name, or pick
         Custom to set a player's own ratings (1 to 10). The play viewer and the best-setup search both use this team. It's
@@ -85,7 +107,17 @@ export function Roster({ slots, setSlots }: Props) {
           </tbody>
         </table>
       </div>
-      <button onClick={() => setSlots(DEFAULT_SLOTS)}>Reset to one of each type</button>
+      <div className="row">
+        <button className="primary" onClick={copy}>Copy share link</button>
+        <button onClick={() => edit(DEFAULT_SLOTS)}>Reset to one of each type</button>
+        {share.state === 'copied' && <span className="hint">Copied. Anyone who opens it gets this team.</span>}
+      </div>
+      {share.state === 'manual' && (
+        <label className="share-manual">
+          Copy this link:
+          <input readOnly value={share.link} onFocus={(e) => e.target.select()} autoFocus />
+        </label>
+      )}
     </details>
   );
 }

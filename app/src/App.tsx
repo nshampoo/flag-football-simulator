@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { buildRoster, cleanRatings, DEFAULT_SLOTS, PLAYER_TYPES, ROSTER_SIZE, type RosterSlot } from './engine/roster';
+import { buildRoster, cleanRatings, decodeSlots, DEFAULT_SLOTS, encodeSlots, PLAYER_TYPES, ROSTER_SIZE, type RosterSlot } from './engine/roster';
 import { BestSetup } from './ui/BestSetup';
 import { Guide } from './ui/Guide';
 import type { Picks } from './ui/labels';
@@ -23,12 +23,57 @@ function loadSlots(): RosterSlot[] {
   return DEFAULT_SLOTS;
 }
 
+const TEAM_PARAM = 'team';
+
+/**
+ * The page people should land on: on shampoe.com the app runs in a same-origin frame under
+ * /flag/open/, which passes its query string through, so links point there.
+ */
+function hostWindow(): Window {
+  try {
+    if (window.parent !== window && window.parent.location.origin === location.origin) return window.parent;
+  } catch {
+    // cross-origin parent; use this window
+  }
+  return window;
+}
+
+/** A team from a share link (`?team=…`), if the page was opened with one. */
+function linkedSlots(): RosterSlot[] | undefined {
+  const code = new URLSearchParams(location.search).get(TEAM_PARAM);
+  return code ? decodeSlots(code) : undefined;
+}
+
+/** Drop `?team=` from the address bar, so later edits aren't undone by a refresh. */
+function clearTeamParam() {
+  for (const w of new Set([window, hostWindow()])) {
+    try {
+      const url = new URL(w.location.href);
+      if (!url.searchParams.has(TEAM_PARAM)) continue;
+      url.searchParams.delete(TEAM_PARAM);
+      w.history.replaceState(w.history.state, '', url);
+    } catch {
+      // leave it
+    }
+  }
+}
+
+function shareLink(slots: RosterSlot[]): string {
+  const host = hostWindow().location;
+  return `${host.origin}${host.pathname}?${TEAM_PARAM}=${encodeSlots(slots)}`;
+}
+
 export default function App() {
   const [view, setView] = useState<View>('viewer');
-  const [slots, setSlots] = useState<RosterSlot[]>(loadSlots);
+  const [linked] = useState(linkedSlots);
+  const [slots, setSlots] = useState<RosterSlot[]>(() => linked ?? loadSlots());
   const roster = useMemo(() => buildRoster(slots), [slots]);
   const rosterKey = useMemo(() => JSON.stringify(slots), [slots]);
   const [picks, setPicks] = useState<Picks>({ archetype: 'balanced', coverage: 'cover2', rusherId: 'p1', rushMode: 'hard' });
+
+  useEffect(() => {
+    if (linked) clearTeamParam();
+  }, [linked]);
 
   useEffect(() => {
     try {
@@ -52,6 +97,8 @@ export default function App() {
       <Guide archetype={picks.archetype} coverage={picks.coverage} rusherType={rusherType} rushMode={picks.rushMode} />
       <Roster
         slots={slots}
+        fromLink={!!linked}
+        shareLink={() => shareLink(slots)}
         setSlots={(next) => {
           setSlots(next);
           // A searched setup was built for the old roster.

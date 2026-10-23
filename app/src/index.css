@@ -161,7 +161,8 @@ table.rank tr.current td { background: var(--wr-tag); }
 .roster input.rating { width: 3.4em; min-width: 0; padding: 4px 2px 4px 6px; text-align: right; font-family: var(--mono); }
 .roster td { vertical-align: top; }
 .roster .hint { white-space: normal; margin-top: 3px; max-width: 220px; }
-.roster > button { justify-self: start; }
+.roster .share-manual { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.roster .share-manual input { font-family: var(--mono); font-size: 12px; }
 
 .diagram-card { display: grid; gap: 8px; justify-items: center; }
 .diagram-card h3 { justify-self: start; }

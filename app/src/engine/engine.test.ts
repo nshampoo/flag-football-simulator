@@ -5,7 +5,7 @@ import { runMatchup } from './montecarlo';
 import { samplePlay } from './plays';
 import { physical, scale } from './ratings';
 import { mulberry32 } from './rng';
-import { buildRoster, MY_TEAM, OPPONENT } from './roster';
+import { buildRoster, decodeSlots, DEFAULT_SLOTS, encodeSlots, MY_TEAM, OPPONENT, type RosterSlot } from './roster';
 import { ROUTE_NAMES, routePath } from './routes';
 import { searchBestSetup } from './search';
 import { simulatePlay } from './sim';
@@ -176,6 +176,23 @@ describe('roster', () => {
     const [p] = buildRoster([{ name: 'Nick', type: 'custom', ratings: { speed: 12, agility: 0, hands: 7.6, catchHeight: 4, man: 6, zone: NaN } }]);
     expect(p.type).toBe('Custom');
     expect(p.ratings).toEqual({ speed: 10, agility: 1, hands: 8, catchHeight: 4, man: 6, zone: 5 });
+  });
+
+  it('round-trips a roster through a share link, including custom ratings and any name', () => {
+    const slots: RosterSlot[] = [
+      { name: 'Nick', type: 'custom', ratings: { speed: 9, agility: 10, hands: 5, catchHeight: 5, man: 3, zone: 1 } },
+      { name: 'José ⚡', type: 'burner' },
+      ...DEFAULT_SLOTS.slice(2),
+    ];
+    const code = encodeSlots(slots);
+    expect(code).toMatch(/^[A-Za-z0-9_-]+$/);
+    expect(decodeSlots(code)).toEqual(slots);
+  });
+
+  it('rejects broken share links', () => {
+    expect(decodeSlots('not-a-team')).toBeUndefined();
+    expect(decodeSlots(encodeSlots(DEFAULT_SLOTS.slice(0, 3)))).toBeUndefined();
+    expect(decodeSlots(btoa(JSON.stringify(DEFAULT_SLOTS.map((s) => [s.name, 'wizard']))))).toBeUndefined();
   });
 
   it('gives the same type the same ratings, with ids by spot', () => {

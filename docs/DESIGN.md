@@ -197,6 +197,10 @@ means rush your fastest; scrambler means fast and disciplined in contain.
 - [x] Roster panel (collapsible, under the guide, above the Play viewer / Best setup tabs): build the team from preset player types (Burner, Glue, Tall, Ballhawk, Steady,
   Quick, Vet), repeats allowed, named, or Custom with the player's own 1 to 10 ratings (starting from
   their previous type's); saved in the browser (localStorage). Real ratings aren't needed.
+- [x] Share link: "Copy share link" puts the roster in `?team=` (base64url of compact JSON) on the
+  host page (shampoe.com/flag/open/, which passes its query string to the framed app). Opening it loads
+  and saves the team, then drops `?team=` from the address bar so later edits survive a refresh. No
+  accounts.
 - [x] Lineup diagram on the call card: everyone's pre-snap spot vs a trips formation, with zone spots,
   drops, man assignments, and roles
 - [x] Live at shampoe.com/flag/ (story page) and /flag/open/ (app), via the `FlagFootballSimSite` stack
